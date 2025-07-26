@@ -6,6 +6,9 @@ Build a comprehensive Go project indexing system that provides remote access to 
 ## Phase 1: Core Indexing Engine Enhancement
 
 ### 1.1 Extend AST Analysis Capabilities
+- [x] **Test Harness Design**: Create test subjects with examples of all Go constructs for indexing validation
+- [ ] **Data Structure Design**: Define core data structures for storing indexed Go code information
+- [ ] **Package Index Function**: Create empty function signature for package indexing (implementation pending)
 - [ ] **Function Definitions**: Extract standalone functions (non-method functions)
 - [ ] **Method Definitions**: Extract methods with receivers (already implemented in current code)
 - [ ] **Variable/Constant Declarations**: Parse global and package-level variables and constants
@@ -49,4 +52,3 @@ Build a comprehensive Go project indexing system that provides remote access to 
 - [ ] Reduce token usage by 70% for AI code queries
 - [ ] Index processing time under 30 seconds for medium-sized projects
 - [ ] Generate individual symbol files in original project structure
-- [ ] Files readable as valid Go code without JSON markup overhead

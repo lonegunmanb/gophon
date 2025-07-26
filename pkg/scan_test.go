@@ -10,10 +10,10 @@ import (
 
 func TestScanPackage_ContainsSubjectsFile(t *testing.T) {
 	// Arrange
-	packagePath := "./test-harness"
+	packagePath := "test-harness"
 
 	// Act
-	result, err := ScanPackage(packagePath)
+	result, err := ScanPackage(packagePath, "github.com/lonegunmanb/gophon/pkg")
 
 	// Assert
 	require.NoError(t, err)
@@ -22,7 +22,8 @@ func TestScanPackage_ContainsSubjectsFile(t *testing.T) {
 	// Check that the result contains a file with absolute path ending in "subjects.go"
 	found := false
 	for _, file := range result.Files {
-		if filepath.Base(file.FileName) == "subjects.go" {
+
+		if filepath.Base(file.FileName) == "subjects.go" && file.Package == "github.com/lonegunmanb/gophon/pkg/test-harness" {
 			found = true
 			break
 		}

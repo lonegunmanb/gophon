@@ -1,13 +1,15 @@
 package pkg
 
 import (
+	"fmt"
 	"golang.org/x/tools/go/packages"
 )
 
 // ScanPackage scans the specified package and returns comprehensive information
-func ScanPackage(pkgPath string) (*PackageInfo, error) {
+func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
+	pkgPath = fmt.Sprintf("%s/%s", basePkgUrl, pkgPath)
 	cfg := &packages.Config{
-		Mode: packages.NeedFiles,
+		Mode: packages.NeedFiles | packages.NeedName | packages.NeedImports | packages.NeedTypes,
 	}
 
 	pkgs, err := packages.Load(cfg, pkgPath)
@@ -25,6 +27,7 @@ func ScanPackage(pkgPath string) (*PackageInfo, error) {
 	for _, file := range pkg.GoFiles {
 		files = append(files, FileInfo{
 			FileName: file,
+			Package:  pkgPath,
 		})
 	}
 

@@ -16,7 +16,8 @@ const MaxRetries = 3
 // Global variables for testing variable extraction
 var (
 	GlobalCounter int64
-	IsDebugMode   bool = false
+	//internal variable for testing
+	isDebugMode bool = false
 )
 
 type StringA string

@@ -4,4 +4,5 @@ package pkg
 type PackageInfo struct {
 	Files     []FileInfo
 	Constants []ConstantInfo
+	Variables []VariableInfo
 }

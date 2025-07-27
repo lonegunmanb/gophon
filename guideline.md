@@ -8,10 +8,12 @@ Build a comprehensive Go project indexing system that provides remote access to 
 ### 1.1 Extend AST Analysis Capabilities
 - [x] **Test Harness Design**: Create test subjects with examples of all Go constructs for indexing validation
 - [x] **Data Structure Design**: Define core data structures for storing indexed Go code information
+- [x] **Range Type Implementation**: Added Range type with embedded *FileInfo and String() method for line extraction
+- [x] **Constant Declarations**: Parse and extract package-level constants with proper Range information
+- [ ] **Variable Declarations**: Parse global and package-level variables (constants completed)
 - [ ] **Package Index Function**: Create empty function signature for package indexing (implementation pending)
 - [ ] **Function Definitions**: Extract standalone functions (non-method functions)
 - [ ] **Method Definitions**: Extract methods with receivers (already implemented in current code)
-- [ ] **Variable/Constant Declarations**: Parse global and package-level variables and constants
 - [ ] **Interface Definitions**: Extract interface types and their method signatures
 - [ ] **Struct Field Details**: Include struct field names, types, and tags
 - [ ] **Import Analysis**: Track package dependencies and import paths

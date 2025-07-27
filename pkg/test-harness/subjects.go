@@ -11,7 +11,7 @@ import (
 const (
 	DefaultTimeout = 30 * time.Second
 )
-const MaxRetries = 3
+const maxRetries = 3
 
 // Global variables for testing variable extraction
 var (

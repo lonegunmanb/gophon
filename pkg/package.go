@@ -6,4 +6,5 @@ type PackageInfo struct {
 	Constants []ConstantInfo
 	Variables []VariableInfo
 	Types     []TypeInfo
+	Functions []FunctionInfo
 }

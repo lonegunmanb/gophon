@@ -28,6 +28,7 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 	var constants []ConstantInfo
 	var variables []VariableInfo
 	var types []TypeInfo
+	var functions []FunctionInfo
 
 	// Extract file information
 	for _, file := range pkg.GoFiles {
@@ -49,7 +50,7 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 			Package:  pkgPath,
 		}
 
-		// Walk through declarations to find constants, variables, and types
+		// Walk through declarations to find constants, variables, types, and functions
 		for _, decl := range file.Decls {
 			if genDecl, ok := decl.(*ast.GenDecl); ok {
 				if genDecl.Tok == token.CONST {
@@ -71,6 +72,8 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 				} else if genDecl.Tok == token.TYPE {
 					types = append(types, extractTypeDeclarations(pkgPath, genDecl, pkg, fileInfo)...)
 				}
+			} else if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+				functions = append(functions, extractFunctionDeclarations(pkgPath, funcDecl, pkg, fileInfo)...)
 			}
 		}
 	}
@@ -80,6 +83,7 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 		Constants: constants,
 		Variables: variables,
 		Types:     types,
+		Functions: functions,
 	}, nil
 }
 
@@ -129,5 +133,44 @@ func extractTypeDeclarations(pkgPath string, genDecl *ast.GenDecl, pkg *packages
 			})
 		}
 	}
+	return results
+}
+
+// Extract function declarations from AST
+func extractFunctionDeclarations(pkgPath string, funcDecl *ast.FuncDecl, pkg *packages.Package, fileInfo *FileInfo) []FunctionInfo {
+	var results []FunctionInfo
+
+	// Get line numbers for the function declaration
+	startPos := pkg.Fset.Position(funcDecl.Pos())
+	endPos := pkg.Fset.Position(funcDecl.End())
+
+	rangeInfo := &Range{
+		FileInfo:  fileInfo,
+		StartLine: startPos.Line,
+		EndLine:   endPos.Line,
+	}
+
+	// Determine receiver type (empty for functions, populated for methods)
+	receiverType := ""
+	if funcDecl.Recv != nil && len(funcDecl.Recv.List) > 0 {
+		// Extract receiver type
+		if starExpr, ok := funcDecl.Recv.List[0].Type.(*ast.StarExpr); ok {
+			// Pointer receiver like *Service
+			if ident, ok := starExpr.X.(*ast.Ident); ok {
+				receiverType = "*" + ident.Name
+			}
+		} else if ident, ok := funcDecl.Recv.List[0].Type.(*ast.Ident); ok {
+			// Value receiver like Service
+			receiverType = ident.Name
+		}
+	}
+
+	results = append(results, FunctionInfo{
+		Range:        rangeInfo,
+		Name:         funcDecl.Name.Name,
+		ReceiverType: receiverType,
+		PackagePath:  pkgPath,
+	})
+
 	return results
 }

@@ -11,17 +11,10 @@ Build a comprehensive Go project indexing system that provides remote access to 
 - [x] **Range Type Implementation**: Added Range type with embedded *FileInfo and String() method for line extraction
 - [x] **Constant Declarations**: Parse and extract package-level constants with proper Range information
 - [x] **Variable Declarations**: Parse global and package-level variables (constants completed)
-- [ ] **Type Definitions**: Extract all type definitions including structs (with field names, types, and tags), interfaces (with method signatures), type aliases, and custom types
+- [x] **Type Definitions**: Extract all type definitions including structs (with field names, types, and tags), interfaces (with method signatures), type aliases, and custom types
+- [x] **Function Definitions**: Extract standalone functions (non-method functions)
 - [ ] **Package Index Function**: Create empty function signature for package indexing (implementation pending)
-- [ ] **Function Definitions**: Extract standalone functions (non-method functions)
-- [ ] **Method Definitions**: Extract methods with receivers (already implemented in current code)
 - [ ] **Import Analysis**: Track package dependencies and import paths
-- [ ] **Documentation Extraction**: Parse and store Go doc comments
-- [ ] **Embedded Type Analysis**: Handle embedded fields and interface embedding
-- [ ] **Generic Type Support**: Parse and index generic type definitions and constraints
-- [ ] **Build Tags Extraction**: Identify and track build constraint comments
-- [ ] **Error Handling Patterns**: Identify common error types and custom error implementations
-- [ ] **Test Function Discovery**: Index test functions, benchmarks, and examples
 
 ### 1.2 Reverse Index File Generation
 - [ ] **Individual Symbol Files**: Generate standalone files for each method, type, function, etc.

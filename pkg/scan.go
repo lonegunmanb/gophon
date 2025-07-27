@@ -27,6 +27,7 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 	var files []FileInfo
 	var constants []ConstantInfo
 	var variables []VariableInfo
+	var types []TypeInfo
 
 	// Extract file information
 	for _, file := range pkg.GoFiles {
@@ -36,7 +37,7 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 		})
 	}
 
-	// Extract constants and variables from AST
+	// Extract constants, variables, and types from AST
 	for _, file := range pkg.Syntax {
 		if file == nil {
 			continue
@@ -48,7 +49,7 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 			Package:  pkgPath,
 		}
 
-		// Walk through declarations to find constants and variables
+		// Walk through declarations to find constants, variables, and types
 		for _, decl := range file.Decls {
 			if genDecl, ok := decl.(*ast.GenDecl); ok {
 				if genDecl.Tok == token.CONST {
@@ -67,6 +68,8 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 							Range:       rangeInfo,
 						}
 					})...)
+				} else if genDecl.Tok == token.TYPE {
+					types = append(types, extractTypeDeclarations(pkgPath, genDecl, pkg, fileInfo)...)
 				}
 			}
 		}
@@ -76,6 +79,7 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 		Files:     files,
 		Constants: constants,
 		Variables: variables,
+		Types:     types,
 	}, nil
 }
 
@@ -98,6 +102,31 @@ func extractDeclarations[T any](pkgPath string, genDecl *ast.GenDecl, pkg *packa
 				result := createFunc(name.Name, pkgPath, rangeInfo)
 				results = append(results, result)
 			}
+		}
+	}
+	return results
+}
+
+// Extract type declarations from AST
+func extractTypeDeclarations(pkgPath string, genDecl *ast.GenDecl, pkg *packages.Package, fileInfo *FileInfo) []TypeInfo {
+	var results []TypeInfo
+	for _, spec := range genDecl.Specs {
+		if typeSpec, ok := spec.(*ast.TypeSpec); ok {
+			// Get line numbers for the type declaration
+			startPos := pkg.Fset.Position(typeSpec.Pos())
+			endPos := pkg.Fset.Position(typeSpec.End())
+
+			rangeInfo := &Range{
+				FileInfo:  fileInfo,
+				StartLine: startPos.Line,
+				EndLine:   endPos.Line,
+			}
+
+			results = append(results, TypeInfo{
+				Name:        typeSpec.Name.Name,
+				PackagePath: pkgPath,
+				Range:       rangeInfo,
+			})
 		}
 	}
 	return results

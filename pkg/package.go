@@ -5,4 +5,5 @@ type PackageInfo struct {
 	Files     []FileInfo
 	Constants []ConstantInfo
 	Variables []VariableInfo
+	Types     []TypeInfo
 }

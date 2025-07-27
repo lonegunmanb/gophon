@@ -8,11 +8,10 @@ import (
 	"time"
 )
 
-// Global constants for testing constant extraction
 const (
 	DefaultTimeout = 30 * time.Second
-	MaxRetries     = 3
 )
+const MaxRetries = 3
 
 // Global variables for testing variable extraction
 var (

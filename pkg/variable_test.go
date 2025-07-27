@@ -9,7 +9,7 @@ import (
 
 func TestScanPackage_ExtractsVariables(t *testing.T) {
 	// Act
-	packageResult := findSubjectsFile(t)
+	packageResult := scanHarnessPackage(t)
 
 	// Assert - check that variables are extracted
 	assert.Len(t, packageResult.Variables, 2, "Should extract 2 global variables from test harness")
@@ -41,7 +41,7 @@ func TestScanPackage_ExtractsVariables(t *testing.T) {
 
 func TestScanPackage_VariablePackagePath(t *testing.T) {
 	// Act
-	packageResult := findSubjectsFile(t)
+	packageResult := scanHarnessPackage(t)
 
 	// Assert - all variables should have correct package path
 	expectedPackagePath := "github.com/lonegunmanb/gophon/pkg/test-harness"

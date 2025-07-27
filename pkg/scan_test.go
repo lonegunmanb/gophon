@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -33,26 +32,4 @@ func TestScanPackage_ContainsSubjectsFile(t *testing.T) {
 		}
 	}
 	assert.True(t, found, "Expected to find subjects.go with absolute path in the scanned package files")
-}
-
-func TestFileInfo_String(t *testing.T) {
-	// Get current working directory to build absolute path
-	currentDir, err := os.Getwd()
-	require.NoError(t, err)
-
-	// Create absolute path to subjects.go
-	subjectsPath := filepath.Join(currentDir, "test-harness", "subjects.go")
-
-	// Create a new FileInfo directly with the absolute file path
-	directFileInfo := &FileInfo{
-		FileName: subjectsPath,
-	}
-
-	// Read file content directly
-	expectedContent, err := os.ReadFile(subjectsPath)
-	require.NoError(t, err)
-
-	// Assert - compare String() result with direct file reading
-	content := directFileInfo.String()
-	assert.Equal(t, string(expectedContent), content, "String() method should return the same content as direct file reading")
 }

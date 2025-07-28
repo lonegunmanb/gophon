@@ -101,7 +101,7 @@ func TestRange_String_WithActualFile(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create absolute path to subjects.go
-	subjectsPath := filepath.Join(currentDir, "test-harness", "subjects.go")
+	subjectsPath := filepath.Join(currentDir, "testharness", "subjects.go")
 
 	// Verify the file exists
 	_, err = os.Stat(subjectsPath)

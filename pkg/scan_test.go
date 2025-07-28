@@ -34,11 +34,11 @@ func TestScanPackage_ExcludesSubPackageFiles(t *testing.T) {
 
 		// Check that should_not_appear.go is not included
 		assert.NotEqual(t, "should_not_appear.go", fileName,
-			"should_not_appear.go from sub_pkg should not be included when scanning only test-harness package")
+			"should_not_appear.go from sub_pkg should not be included when scanning only testharness package")
 
 		// Check that no files from sub_pkg directory are included
 		assert.NotContains(t, filePath, "sub_pkg",
-			"Files from sub_pkg directory should not be included when scanning only test-harness package")
+			"Files from sub_pkg directory should not be included when scanning only testharness package")
 	}
 
 	// Additional verification: ensure we only have files from the exact package
@@ -51,7 +51,7 @@ func TestScanPackage_ExcludesSubPackageFiles(t *testing.T) {
 
 func TestScanPackage_PackageNameDifferentFromDirectoryName(t *testing.T) {
 	// Act - scan the mismatched_dir directory which contains package different_pkg
-	packagePath := "test-harness/mismatched_dir"
+	packagePath := "testharness/mismatched_dir"
 	result, err := ScanPackage(packagePath, "github.com/lonegunmanb/gophon/pkg")
 
 	// Assert
@@ -63,7 +63,7 @@ func TestScanPackage_PackageNameDifferentFromDirectoryName(t *testing.T) {
 	assert.Equal(t, "TestVariable", result.Variables[0].Name, "Should find TestVariable")
 
 	// Verify variable's package path - should use directory-based path for consistency
-	expectedPackagePath := "github.com/lonegunmanb/gophon/pkg/test-harness/different_pkg"
+	expectedPackagePath := "github.com/lonegunmanb/gophon/pkg/testharness/different_pkg"
 	assert.Equal(t, expectedPackagePath, result.Variables[0].PackagePath,
 		"Variable package path should use directory-based path for external accessibility")
 
@@ -76,9 +76,9 @@ func TestScanPackage_PackageNameDifferentFromDirectoryName(t *testing.T) {
 		"File package path should use directory-based path for external accessibility")
 }
 
-// scanHarnessPackage is a helper function that scans the test-harness package and returns the package result
+// scanHarnessPackage is a helper function that scans the testharness package and returns the package result
 func scanHarnessPackage(t *testing.T) *PackageInfo {
-	packagePath := "test-harness"
+	packagePath := "testharness"
 	result, err := ScanPackage(packagePath, "github.com/lonegunmanb/gophon/pkg")
 
 	require.NoError(t, err)

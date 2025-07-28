@@ -87,7 +87,7 @@ func TestFileInfo_String(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create absolute path to subjects.go
-	subjectsPath := filepath.Join(currentDir, "test-harness", "subjects.go")
+	subjectsPath := filepath.Join(currentDir, "testharness", "subjects.go")
 
 	// Create a new FileInfo directly with the absolute file path
 	directFileInfo := &FileInfo{

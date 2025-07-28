@@ -13,13 +13,14 @@ Build a comprehensive Go project indexing system that provides remote access to 
 - [x] **Variable Declarations**: Parse global and package-level variables (constants completed)
 - [x] **Type Definitions**: Extract all type definitions including structs (with field names, types, and tags), interfaces (with method signatures), type aliases, and custom types
 - [x] **Function Definitions**: Extract standalone functions (non-method functions)
+- [x] **IndexableSymbol Interface**: Design and implement a new interface with `IndexFileName()` method that `FunctionInfo`, `TypeInfo`, `VariableInfo`, and `ConstantInfo` implement. This interface generates predictable, unique file names that AI agents can easily guess when reading Go source code (e.g., `type.TypeName.goindex`, `func.FunctionName.goindex`, `method.ReceiverType.MethodName.goindex`, `var.VariableName.goindex`). Constants use `var.` prefix to unify with variables for simplified AI agent lookups.
 - [ ] **Package Index Function**: Create empty function signature for package indexing (implementation pending)
 - [ ] **Import Analysis**: Track package dependencies and import paths
 
 ### 1.2 Reverse Index File Generation
 - [ ] **Individual Symbol Files**: Generate standalone files for each method, type, function, etc.
 - [ ] **AI-Friendly Format**: Structure files with package path, imports, and source code in easily parsable format
-- [ ] **Smart File Naming**: Use descriptive names like `method_PackageName_TypeName_MethodName.go`, `type_PackageName_TypeName.go`
+- [ ] **Smart File Naming**: Use descriptive names like `method.ReceiverType.MethodName.goindex`, `type.TypeName.goindex`, `func.FunctionName.goindex`, `var.VariableName.goindex`
 - [ ] **Complete Context**: Include necessary imports and type definitions for each symbol's context
 - [ ] **Dependency Resolution**: Automatically include referenced types and their definitions
 - [ ] **Cross-Reference Links**: Add metadata about related symbols and their file locations

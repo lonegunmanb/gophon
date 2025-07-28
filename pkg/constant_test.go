@@ -44,3 +44,50 @@ func findConstantByName(constants []ConstantInfo, name string) *ConstantInfo {
 	}
 	return nil
 }
+
+func TestConstantInfo_IndexFileName(t *testing.T) {
+	// Arrange
+	tests := []struct {
+		name         string
+		constantName string
+		expected     string
+	}{
+		{
+			name:         "Simple constant name",
+			constantName: "DefaultTimeout",
+			expected:     "var.DefaultTimeout.goindex",
+		},
+		{
+			name:         "Constant with lowercase name",
+			constantName: "maxRetries",
+			expected:     "var.maxRetries.goindex",
+		},
+		{
+			name:         "Constant with mixed case",
+			constantName: "ApiVersion",
+			expected:     "var.ApiVersion.goindex",
+		},
+		{
+			name:         "Constant with underscores",
+			constantName: "DEFAULT_SIZE",
+			expected:     "var.DEFAULT_SIZE.goindex",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			constant := ConstantInfo{
+				Name:        tt.constantName,
+				PackagePath: "github.com/example/pkg",
+			}
+
+			// Act
+			result := constant.IndexFileName()
+
+			// Assert - verify the constant implements IndexableSymbol interface
+			var _ IndexableSymbol = constant
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

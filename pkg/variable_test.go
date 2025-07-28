@@ -50,6 +50,59 @@ func TestScanPackage_VariablePackagePath(t *testing.T) {
 	}
 }
 
+func TestVariableInfo_IndexFileName(t *testing.T) {
+	// Arrange
+	tests := []struct {
+		name         string
+		variableName string
+		expected     string
+	}{
+		{
+			name:         "Simple variable name",
+			variableName: "GlobalCounter",
+			expected:     "var.GlobalCounter.goindex",
+		},
+		{
+			name:         "Variable with lowercase name",
+			variableName: "isDebugMode",
+			expected:     "var.isDebugMode.goindex",
+		},
+		{
+			name:         "Variable with mixed case",
+			variableName: "DefaultTimeout",
+			expected:     "var.DefaultTimeout.goindex",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			variable := VariableInfo{
+				Name:        tt.variableName,
+				PackagePath: "github.com/example/pkg",
+			}
+
+			// Act
+			result := variable.IndexFileName()
+
+			// Assert
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestVariableInfo_ImplementsIndexableSymbol(t *testing.T) {
+	// Arrange
+	variable := VariableInfo{
+		Name:        "TestVariable",
+		PackagePath: "github.com/example/pkg",
+	}
+
+	// Act & Assert - this should compile without error, proving VariableInfo implements IndexableSymbol
+	var _ IndexableSymbol = variable
+	assert.Equal(t, "var.TestVariable.goindex", variable.IndexFileName())
+}
+
 // Helper function to find a variable by name
 func findVariableByName(variables []VariableInfo, name string) VariableInfo {
 	var variable VariableInfo

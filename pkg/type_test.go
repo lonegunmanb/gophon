@@ -105,3 +105,60 @@ func findTypeByName(types []TypeInfo, name string) *TypeInfo {
 	}
 	return nil
 }
+
+func TestTypeInfo_IndexFileName(t *testing.T) {
+	// Arrange
+	tests := []struct {
+		name     string
+		typeName string
+		expected string
+	}{
+		{
+			name:     "Simple struct type",
+			typeName: "User",
+			expected: "type.User.goindex",
+		},
+		{
+			name:     "Interface type",
+			typeName: "UserService",
+			expected: "type.UserService.goindex",
+		},
+		{
+			name:     "Type alias",
+			typeName: "StringA",
+			expected: "type.StringA.goindex",
+		},
+		{
+			name:     "Type alias with equals",
+			typeName: "StringB",
+			expected: "type.StringB.goindex",
+		},
+		{
+			name:     "Type with mixed case",
+			typeName: "HTTPClient",
+			expected: "type.HTTPClient.goindex",
+		},
+		{
+			name:     "Type with underscores",
+			typeName: "API_Config",
+			expected: "type.API_Config.goindex",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			typeInfo := TypeInfo{
+				Name:        tt.typeName,
+				PackagePath: "github.com/example/pkg",
+			}
+
+			// Act
+			result := typeInfo.IndexFileName()
+
+			// Assert - verify the type implements IndexableSymbol interface
+			var _ IndexableSymbol = typeInfo
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

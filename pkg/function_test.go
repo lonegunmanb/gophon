@@ -121,6 +121,65 @@ func TestScanPackage_FunctionPackagePath(t *testing.T) {
 	}
 }
 
+func TestFunctionInfo_IndexFileName(t *testing.T) {
+	// Arrange
+	tests := []struct {
+		name         string
+		functionName string
+		receiverType string
+		expected     string
+	}{
+		{
+			name:         "Standalone function",
+			functionName: "NewService",
+			receiverType: "",
+			expected:     "func.NewService.goindex",
+		},
+		{
+			name:         "Method with pointer receiver",
+			functionName: "CreateUser",
+			receiverType: "*Service",
+			expected:     "method.Service.CreateUser.goindex",
+		},
+		{
+			name:         "Method with value receiver",
+			functionName: "String",
+			receiverType: "User",
+			expected:     "method.User.String.goindex",
+		},
+		{
+			name:         "Function with mixed case name",
+			functionName: "ValidateEmail",
+			receiverType: "",
+			expected:     "func.ValidateEmail.goindex",
+		},
+		{
+			name:         "Private function",
+			functionName: "contains",
+			receiverType: "",
+			expected:     "func.contains.goindex",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Arrange
+			function := FunctionInfo{
+				Name:         tt.functionName,
+				ReceiverType: tt.receiverType,
+				PackagePath:  "github.com/example/pkg",
+			}
+
+			// Act
+			result := function.IndexFileName()
+
+			// Assert - verify the function implements IndexableSymbol interface
+			var _ IndexableSymbol = function
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 // findFunctionByName is a helper function that finds a function by name in a slice of FunctionInfo
 func findFunctionByName(functions []FunctionInfo, name string) *FunctionInfo {
 	for i := range functions {

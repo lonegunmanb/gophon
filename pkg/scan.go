@@ -4,17 +4,18 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"strings"
 	"golang.org/x/tools/go/packages"
 )
 
 // ScanPackage scans the specified package and returns comprehensive information
 func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
-	pkgPath = fmt.Sprintf("%s/%s", basePkgUrl, pkgPath)
+	loadPath := fmt.Sprintf("%s/%s", basePkgUrl, pkgPath)
 	cfg := &packages.Config{
 		Mode: packages.NeedFiles | packages.NeedName | packages.NeedImports | packages.NeedTypes | packages.NeedSyntax,
 	}
 
-	pkgs, err := packages.Load(cfg, pkgPath)
+	pkgs, err := packages.Load(cfg, loadPath)
 	if err != nil {
 		return nil, err
 	}
@@ -24,6 +25,21 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 	}
 
 	pkg := pkgs[0]
+	
+	// Determine the actual package path based on the declared package name
+	// Split the directory path and replace the last part with the actual package name
+	pathParts := []string{basePkgUrl}
+	if pkgPath != "" {
+		parts := strings.Split(pkgPath, "/")
+		if len(parts) > 1 {
+			pathParts = append(pathParts, parts[:len(parts)-1]...)
+		}
+		pathParts = append(pathParts, pkg.Name)
+	} else {
+		pathParts = append(pathParts, pkg.Name)
+	}
+	actualPkgPath := strings.Join(pathParts, "/")
+	
 	var files []FileInfo
 	var constants []ConstantInfo
 	var variables []VariableInfo
@@ -34,7 +50,7 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 	for _, file := range pkg.GoFiles {
 		files = append(files, FileInfo{
 			FileName: file,
-			Package:  pkgPath,
+			Package:  actualPkgPath,
 		})
 	}
 
@@ -47,14 +63,14 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 		fileName := pkg.Fset.Position(file.Pos()).Filename
 		fileInfo := &FileInfo{
 			FileName: fileName,
-			Package:  pkgPath,
+			Package:  actualPkgPath,
 		}
 
 		// Walk through declarations to find constants, variables, types, and functions
 		for _, decl := range file.Decls {
 			if genDecl, ok := decl.(*ast.GenDecl); ok {
 				if genDecl.Tok == token.CONST {
-					constants = append(constants, extractDeclarations(pkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) ConstantInfo {
+					constants = append(constants, extractDeclarations(actualPkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) ConstantInfo {
 						return ConstantInfo{
 							Name:        name,
 							PackagePath: pkgPath,
@@ -62,7 +78,7 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 						}
 					})...)
 				} else if genDecl.Tok == token.VAR {
-					variables = append(variables, extractDeclarations(pkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) VariableInfo {
+					variables = append(variables, extractDeclarations(actualPkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) VariableInfo {
 						return VariableInfo{
 							Name:        name,
 							PackagePath: pkgPath,
@@ -70,10 +86,10 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 						}
 					})...)
 				} else if genDecl.Tok == token.TYPE {
-					types = append(types, extractTypeDeclarations(pkgPath, genDecl, pkg, fileInfo)...)
+					types = append(types, extractTypeDeclarations(actualPkgPath, genDecl, pkg, fileInfo)...)
 				}
 			} else if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-				functions = append(functions, extractFunctionDeclarations(pkgPath, funcDecl, pkg, fileInfo)...)
+				functions = append(functions, extractFunctionDeclarations(actualPkgPath, funcDecl, pkg, fileInfo)...)
 			}
 		}
 	}

@@ -27,7 +27,7 @@ func TestScanPackage_ExtractsFunctions(t *testing.T) {
 	require.NotNil(t, newServiceFunc, "Should find NewService function")
 	assert.Equal(t, "NewService", newServiceFunc.Name)
 	assert.Equal(t, "", newServiceFunc.ReceiverType, "NewService should be a standalone function (no receiver)")
-	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/test-harness", newServiceFunc.PackagePath)
+	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", newServiceFunc.PackagePath)
 	assert.Contains(t, newServiceFunc.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(newServiceFunc.FileName), "FileName should be absolute path")
 
@@ -43,7 +43,7 @@ func TestScanPackage_ExtractsFunctions(t *testing.T) {
 	require.NotNil(t, validateEmailFunc, "Should find ValidateEmail function")
 	assert.Equal(t, "ValidateEmail", validateEmailFunc.Name)
 	assert.Equal(t, "", validateEmailFunc.ReceiverType, "ValidateEmail should be a standalone function (no receiver)")
-	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/test-harness", validateEmailFunc.PackagePath)
+	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", validateEmailFunc.PackagePath)
 	assert.Contains(t, validateEmailFunc.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(validateEmailFunc.FileName), "FileName should be absolute path")
 
@@ -57,7 +57,7 @@ func TestScanPackage_ExtractsFunctions(t *testing.T) {
 	require.NotNil(t, containsFunc, "Should find contains function")
 	assert.Equal(t, "contains", containsFunc.Name)
 	assert.Equal(t, "", containsFunc.ReceiverType, "contains should be a standalone function (no receiver)")
-	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/test-harness", containsFunc.PackagePath)
+	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", containsFunc.PackagePath)
 	assert.Contains(t, containsFunc.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(containsFunc.FileName), "FileName should be absolute path")
 
@@ -76,7 +76,7 @@ func TestScanPackage_ExtractsFunctions(t *testing.T) {
 	require.NotNil(t, createUserMethod, "Should find CreateUser method")
 	assert.Equal(t, "CreateUser", createUserMethod.Name)
 	assert.Equal(t, "*Service", createUserMethod.ReceiverType, "CreateUser should be a method with *Service receiver")
-	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/test-harness", createUserMethod.PackagePath)
+	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", createUserMethod.PackagePath)
 	assert.Contains(t, createUserMethod.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(createUserMethod.FileName), "FileName should be absolute path")
 
@@ -99,7 +99,7 @@ func TestScanPackage_ExtractsFunctions(t *testing.T) {
 	require.NotNil(t, getUserMethod, "Should find GetUser method")
 	assert.Equal(t, "GetUser", getUserMethod.Name)
 	assert.Equal(t, "*Service", getUserMethod.ReceiverType, "GetUser should be a method with *Service receiver")
-	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/test-harness", getUserMethod.PackagePath)
+	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", getUserMethod.PackagePath)
 	assert.Contains(t, getUserMethod.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(getUserMethod.FileName), "FileName should be absolute path")
 
@@ -115,7 +115,7 @@ func TestScanPackage_FunctionPackagePath(t *testing.T) {
 	packageResult := scanHarnessPackage(t)
 
 	// Assert - all functions should have correct package path
-	expectedPackagePath := "github.com/lonegunmanb/gophon/pkg/test-harness"
+	expectedPackagePath := "github.com/lonegunmanb/gophon/pkg/testharness"
 	for _, functionInfo := range packageResult.Functions {
 		assert.Equal(t, expectedPackagePath, functionInfo.PackagePath, "Function %s should have correct package path", functionInfo.Name)
 	}

@@ -21,7 +21,7 @@ func TestScanPackage_ExtractsVariables(t *testing.T) {
 	// Verify GlobalCounter variable
 	require.NotNil(t, globalCounterVar, "Should find GlobalCounter variable")
 	assert.Equal(t, "GlobalCounter", globalCounterVar.Name)
-	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/test-harness", globalCounterVar.PackagePath)
+	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", globalCounterVar.PackagePath)
 	assert.Contains(t, globalCounterVar.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(globalCounterVar.FileName), "FileName should be absolute path")
 
@@ -31,7 +31,7 @@ func TestScanPackage_ExtractsVariables(t *testing.T) {
 	// Verify IsDebugMode variable
 	require.NotNil(t, isDebugModeVar, "Should find IsDebugMode variable")
 	assert.Equal(t, "isDebugMode", isDebugModeVar.Name)
-	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/test-harness", isDebugModeVar.PackagePath)
+	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", isDebugModeVar.PackagePath)
 	assert.Contains(t, isDebugModeVar.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(isDebugModeVar.FileName), "FileName should be absolute path")
 
@@ -44,7 +44,7 @@ func TestScanPackage_VariablePackagePath(t *testing.T) {
 	packageResult := scanHarnessPackage(t)
 
 	// Assert - all variables should have correct package path
-	expectedPackagePath := "github.com/lonegunmanb/gophon/pkg/test-harness"
+	expectedPackagePath := "github.com/lonegunmanb/gophon/pkg/testharness"
 	for _, variable := range packageResult.Variables {
 		assert.Equal(t, expectedPackagePath, variable.PackagePath, "Variable %s should have correct package path", variable.Name)
 	}

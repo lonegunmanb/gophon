@@ -23,6 +23,32 @@ func TestScanPackage_ContainsSubjectsFile(t *testing.T) {
 	assert.True(t, found, "Expected to find subjects.go with absolute path in the scanned package files")
 }
 
+func TestScanPackage_ExcludesSubPackageFiles(t *testing.T) {
+	// Act
+	packageResult := scanHarnessPackage(t)
+
+	// Assert - ensure no files from sub_pkg are included
+	for _, file := range packageResult.Files {
+		fileName := filepath.Base(file.FileName)
+		filePath := file.FileName
+		
+		// Check that should_not_appear.go is not included
+		assert.NotEqual(t, "should_not_appear.go", fileName, 
+			"should_not_appear.go from sub_pkg should not be included when scanning only test-harness package")
+		
+		// Check that no files from sub_pkg directory are included
+		assert.NotContains(t, filePath, "sub_pkg", 
+			"Files from sub_pkg directory should not be included when scanning only test-harness package")
+	}
+	
+	// Additional verification: ensure we only have files from the exact package
+	expectedPackage := "github.com/lonegunmanb/gophon/pkg/test-harness"
+	for _, file := range packageResult.Files {
+		assert.Equal(t, expectedPackage, file.Package, 
+			"All files should belong to the exact package being scanned")
+	}
+}
+
 // scanHarnessPackage is a helper function that scans the test-harness package and returns the package result
 func scanHarnessPackage(t *testing.T) *PackageInfo {
 	packagePath := "test-harness"

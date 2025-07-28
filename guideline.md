@@ -14,6 +14,7 @@ Build a comprehensive Go project indexing system that provides remote access to 
 - [x] **Type Definitions**: Extract all type definitions including structs (with field names, types, and tags), interfaces (with method signatures), type aliases, and custom types
 - [x] **Function Definitions**: Extract standalone functions (non-method functions)
 - [x] **IndexableSymbol Interface**: Design and implement a new interface with `IndexFileName()` method that `FunctionInfo`, `TypeInfo`, `VariableInfo`, and `ConstantInfo` implement. This interface generates predictable, unique file names that AI agents can easily guess when reading Go source code (e.g., `type.TypeName.goindex`, `func.FunctionName.goindex`, `method.ReceiverType.MethodName.goindex`, `var.VariableName.goindex`). Constants use `var.` prefix to unify with variables for simplified AI agent lookups.
+- [x] **Recursive Package Scanner**: Implement `ScanPackagesRecursively` function that accepts `pkgPath`, `basePkgUrl` parameters and a callback function. The callback receives `*PackageInfo` and `pkgUrl` string parameters. This function will scan the specified package using `ScanSinglePackage`, invoke the callback with results, then recursively scan all subdirectories containing Go packages within the current module scope.
 - [ ] **Package Index Function**: Create empty function signature for package indexing (implementation pending)
 - [ ] **Import Analysis**: Track package dependencies and import paths
 
@@ -28,7 +29,7 @@ Build a comprehensive Go project indexing system that provides remote access to 
 - [ ] **Performance Metrics**: Track file sizes and generation times for optimization
 
 ### 1.3 Recursive Package Discovery
-- [ ] **Directory Traversal**: Recursively scan all packages in the current module only
+- [ ] **Directory Traversal**: Recursively scan all packages in the current module only (foundation implemented via `ScanPackagesRecursively`)
 - [ ] **Go Module Support**: Handle go.mod files and respect module boundaries
 - [ ] **Current Module Scope**: Only index packages within the current module, exclude external dependencies
 - [ ] **Build Constraint Awareness**: Respect build tags and constraints within the current module

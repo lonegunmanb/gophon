@@ -20,8 +20,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Run ScanPackage
-	result, err := pkg.ScanPackage(*pkgPath, *basePkgUrl)
+	// Run ScanSinglePackage
+	result, err := pkg.ScanSinglePackage(*pkgPath, *basePkgUrl)
 	if err != nil {
 		log.Fatalf("Failed to scan package: %v", err)
 	}

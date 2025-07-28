@@ -2,14 +2,19 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/spf13/afero"
 	"go/ast"
 	"go/token"
+	"path/filepath"
 	"strings"
+
 	"golang.org/x/tools/go/packages"
 )
 
-// ScanPackage scans the specified package and returns comprehensive information
-func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
+var fs = afero.NewOsFs()
+
+// ScanSinglePackage scans the specified package and returns comprehensive information
+func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 	loadPath := fmt.Sprintf("%s/%s", basePkgUrl, pkgPath)
 	cfg := &packages.Config{
 		Mode: packages.NeedFiles | packages.NeedName | packages.NeedImports | packages.NeedTypes | packages.NeedSyntax,
@@ -25,7 +30,7 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 	}
 
 	pkg := pkgs[0]
-	
+
 	// Determine the actual package path based on the declared package name
 	// Split the directory path and replace the last part with the actual package name
 	pathParts := []string{basePkgUrl}
@@ -39,7 +44,7 @@ func ScanPackage(pkgPath string, basePkgUrl string) (*PackageInfo, error) {
 		pathParts = append(pathParts, pkg.Name)
 	}
 	actualPkgPath := strings.Join(pathParts, "/")
-	
+
 	var files []FileInfo
 	var constants []ConstantInfo
 	var variables []VariableInfo
@@ -190,3 +195,118 @@ func extractFunctionDeclarations(pkgPath string, funcDecl *ast.FuncDecl, pkg *pa
 
 	return results
 }
+
+// ScanPackagesRecursively recursively scans all packages starting from the specified path
+// and invokes the callback function for each package found. It uses afero.Fs for file system operations
+// to enable easy testing with mocked file systems.
+// Parameters:
+//   - fs: The afero filesystem to use for file operations
+//   - pkgPath: The relative package path to start scanning from (e.g., "pkg/utils")
+//   - basePkgUrl: The base package URL/module path (e.g., "github.com/user/project")
+//   - callback: Function called for each package, receives *PackageInfo and full package URL
+func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageInfo, string)) error {
+	// Scan the current package
+	packageInfo, err := ScanPackage(pkgPath, basePkgUrl)
+	if err != nil {
+		return fmt.Errorf("failed to scan package %s: %w", pkgPath, err)
+	}
+
+	// Calculate the full package URL
+	var fullPkgUrl string
+	if pkgPath == "" {
+		fullPkgUrl = basePkgUrl
+	} else {
+		fullPkgUrl = fmt.Sprintf("%s/%s", basePkgUrl, pkgPath)
+	}
+
+	// Invoke callback for current package
+	callback(packageInfo, fullPkgUrl)
+
+	// Determine the physical directory path to scan for subdirectories
+	var dirPath string
+	if pkgPath == "" {
+		dirPath = "."
+	} else {
+		dirPath = pkgPath
+	}
+
+	// Read directory contents using afero filesystem
+	entries, err := afero.ReadDir(fs, dirPath)
+	if err != nil {
+		// If we can't read the directory, just return without error
+		// This handles cases where the package path doesn't correspond to a physical directory
+		return nil
+	}
+
+	// Recursively scan subdirectories that contain Go files
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		// Skip common non-package directories
+		if shouldSkipDirectory(entry.Name()) {
+			continue
+		}
+
+		subDirPath := filepath.Join(dirPath, entry.Name())
+
+		// Check if the subdirectory contains any .go files
+		if hasGoFiles(subDirPath) {
+			// Construct the sub-package path
+			var subPkgPath string
+			if pkgPath == "" {
+				subPkgPath = entry.Name()
+			} else {
+				subPkgPath = fmt.Sprintf("%s/%s", pkgPath, entry.Name())
+			}
+
+			// Recursively scan the sub-package
+			if err = ScanPackagesRecursively(subPkgPath, basePkgUrl, callback); err != nil {
+				return fmt.Errorf("failed to scan sub-package %s: %w", subPkgPath, err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// shouldSkipDirectory determines if a directory should be skipped during package scanning
+func shouldSkipDirectory(dirName string) bool {
+	skipDirs := map[string]bool{
+		"vendor":   true,
+		".git":     true,
+		".idea":    true,
+		".vscode":  true,
+		"testdata": true,
+	}
+
+	// Skip hidden directories (starting with .)
+	if strings.HasPrefix(dirName, ".") && dirName != "." {
+		return true
+	}
+
+	return skipDirs[dirName]
+}
+
+// hasGoFiles checks if a directory contains any .go files
+func hasGoFiles(dirPath string) bool {
+	entries, err := afero.ReadDir(fs, dirPath)
+	if err != nil {
+		return false
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
+			// Skip test files for package detection
+			if !strings.HasSuffix(entry.Name(), "_test.go") {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// ScanPackage is an alias for ScanSinglePackage for backward compatibility
+var ScanPackage = ScanSinglePackage

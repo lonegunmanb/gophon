@@ -74,21 +74,22 @@ func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 		// Walk through declarations to find constants, variables, types, and functions
 		for _, decl := range file.Decls {
 			if genDecl, ok := decl.(*ast.GenDecl); ok {
-				if genDecl.Tok == token.CONST {
+				switch genDecl.Tok {
+				case token.CONST:
 					constants = append(constants, extractDeclarations(actualPkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) *ConstantInfo {
 						return &ConstantInfo{
 							Name:  name,
 							Range: rangeInfo,
 						}
 					})...)
-				} else if genDecl.Tok == token.VAR {
+				case token.VAR:
 					variables = append(variables, extractDeclarations(actualPkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) *VariableInfo {
 						return &VariableInfo{
 							Name:  name,
 							Range: rangeInfo,
 						}
 					})...)
-				} else if genDecl.Tok == token.TYPE {
+				case token.TYPE:
 					types = append(types, extractTypeDeclarations(genDecl, pkg, fileInfo)...)
 				}
 			} else if funcDecl, ok := decl.(*ast.FuncDecl); ok {

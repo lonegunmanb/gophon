@@ -24,7 +24,7 @@ func TestScanPackage_ExtractsTypes(t *testing.T) {
 	// Verify StringA type (type alias)
 	require.NotNil(t, stringAType, "Should find StringA type")
 	assert.Equal(t, "StringA", stringAType.Name)
-	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", stringAType.PackagePath)
+	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", stringAType.PackagePath())
 	assert.Contains(t, stringAType.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(stringAType.FileName), "FileName should be absolute path")
 
@@ -34,7 +34,7 @@ func TestScanPackage_ExtractsTypes(t *testing.T) {
 	// Verify StringB type (type alias with =)
 	require.NotNil(t, stringBType, "Should find StringB type")
 	assert.Equal(t, "StringB", stringBType.Name)
-	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", stringBType.PackagePath)
+	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", stringBType.PackagePath())
 	assert.Contains(t, stringBType.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(stringBType.FileName), "FileName should be absolute path")
 
@@ -44,7 +44,7 @@ func TestScanPackage_ExtractsTypes(t *testing.T) {
 	// Verify User struct type
 	require.NotNil(t, userType, "Should find User type")
 	assert.Equal(t, "User", userType.Name)
-	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", userType.PackagePath)
+	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", userType.PackagePath())
 	assert.Contains(t, userType.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(userType.FileName), "FileName should be absolute path")
 
@@ -59,7 +59,7 @@ func TestScanPackage_ExtractsTypes(t *testing.T) {
 	// Verify UserService interface type
 	require.NotNil(t, userServiceType, "Should find UserService type")
 	assert.Equal(t, "UserService", userServiceType.Name)
-	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", userServiceType.PackagePath)
+	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", userServiceType.PackagePath())
 	assert.Contains(t, userServiceType.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(userServiceType.FileName), "FileName should be absolute path")
 
@@ -74,7 +74,7 @@ func TestScanPackage_ExtractsTypes(t *testing.T) {
 	// Verify Service struct type
 	require.NotNil(t, serviceType, "Should find Service type")
 	assert.Equal(t, "Service", serviceType.Name)
-	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", serviceType.PackagePath)
+	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", serviceType.PackagePath())
 	assert.Contains(t, serviceType.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(serviceType.FileName), "FileName should be absolute path")
 
@@ -92,7 +92,7 @@ func TestScanPackage_TypePackagePath(t *testing.T) {
 	// Assert - all types should have correct package path
 	expectedPackagePath := "github.com/lonegunmanb/gophon/pkg/testharness"
 	for _, typeInfo := range packageResult.Types {
-		assert.Equal(t, expectedPackagePath, typeInfo.PackagePath, "Type %s should have correct package path", typeInfo.Name)
+		assert.Equal(t, expectedPackagePath, typeInfo.PackagePath(), "Type %s should have correct package path", typeInfo.Name)
 	}
 }
 
@@ -149,8 +149,12 @@ func TestTypeInfo_IndexFileName(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
 			typeInfo := TypeInfo{
-				Name:        tt.typeName,
-				PackagePath: "github.com/example/pkg",
+				Name: tt.typeName,
+				Range: &Range{
+					FileInfo: &FileInfo{
+						Package: "github.com/example/pkg",
+					},
+				},
 			}
 
 			// Act

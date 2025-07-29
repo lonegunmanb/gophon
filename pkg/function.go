@@ -9,8 +9,7 @@ import (
 type FunctionInfo struct {
 	*Range
 	Name         string
-	ReceiverType string // for methods, empty for functions
-	PackagePath  string
+	ReceiverType string
 }
 
 // IndexFileName generates a predictable index file name for this function or method

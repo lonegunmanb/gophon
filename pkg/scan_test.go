@@ -67,7 +67,7 @@ func TestScanPackage_PackageNameDifferentFromDirectoryName(t *testing.T) {
 
 	// Verify variable's package path - should use directory-based path for consistency
 	expectedPackagePath := "github.com/lonegunmanb/gophon/pkg/testharness/different_pkg"
-	assert.Equal(t, expectedPackagePath, result.Variables[0].PackagePath,
+	assert.Equal(t, expectedPackagePath, result.Variables[0].PackagePath(),
 		"Variable package path should use directory-based path for external accessibility")
 
 	// Verify one file is included (example.go)
@@ -119,7 +119,7 @@ type Connection struct {
 	setupMemoryFilesystem(mockFs, files)
 
 	// Stub the filesystem variable to use our memory filesystem
-	stubs := gostub.Stub(&fs, mockFs).Stub(&ScanPackage, func(pkgPath, basePkgUrl string) (*PackageInfo, error) {
+	stubs := gostub.Stub(&sourceFs, mockFs).Stub(&ScanPackage, func(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 		// Return mock package info based on the path
 		var packageName string
 		switch pkgPath {

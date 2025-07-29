@@ -5,8 +5,7 @@ import "fmt"
 // TypeInfo contains information about type declarations
 type TypeInfo struct {
 	*Range
-	Name        string
-	PackagePath string
+	Name string
 }
 
 // IndexFileName generates a predictable index file name for this type

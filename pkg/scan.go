@@ -11,7 +11,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-var fs = afero.NewOsFs()
+var sourceFs = afero.NewOsFs()
 
 // ScanSinglePackage scans the specified package and returns comprehensive information
 func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
@@ -77,17 +77,15 @@ func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 				if genDecl.Tok == token.CONST {
 					constants = append(constants, extractDeclarations(actualPkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) ConstantInfo {
 						return ConstantInfo{
-							Name:        name,
-							PackagePath: pkgPath,
-							Range:       rangeInfo,
+							Name:  name,
+							Range: rangeInfo,
 						}
 					})...)
 				} else if genDecl.Tok == token.VAR {
 					variables = append(variables, extractDeclarations(actualPkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) VariableInfo {
 						return VariableInfo{
-							Name:        name,
-							PackagePath: pkgPath,
-							Range:       rangeInfo,
+							Name:  name,
+							Range: rangeInfo,
 						}
 					})...)
 				} else if genDecl.Tok == token.TYPE {
@@ -148,9 +146,8 @@ func extractTypeDeclarations(pkgPath string, genDecl *ast.GenDecl, pkg *packages
 			}
 
 			results = append(results, TypeInfo{
-				Name:        typeSpec.Name.Name,
-				PackagePath: pkgPath,
-				Range:       rangeInfo,
+				Name:  typeSpec.Name.Name,
+				Range: rangeInfo,
 			})
 		}
 	}
@@ -190,7 +187,6 @@ func extractFunctionDeclarations(pkgPath string, funcDecl *ast.FuncDecl, pkg *pa
 		Range:        rangeInfo,
 		Name:         funcDecl.Name.Name,
 		ReceiverType: receiverType,
-		PackagePath:  pkgPath,
 	})
 
 	return results
@@ -231,7 +227,7 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 	}
 
 	// Read directory contents using afero filesystem
-	entries, err := afero.ReadDir(fs, dirPath)
+	entries, err := afero.ReadDir(sourceFs, dirPath)
 	if err != nil {
 		// If we can't read the directory, just return without error
 		// This handles cases where the package path doesn't correspond to a physical directory
@@ -291,7 +287,7 @@ func shouldSkipDirectory(dirName string) bool {
 
 // hasGoFiles checks if a directory contains any .go files
 func hasGoFiles(dirPath string) bool {
-	entries, err := afero.ReadDir(fs, dirPath)
+	entries, err := afero.ReadDir(sourceFs, dirPath)
 	if err != nil {
 		return false
 	}

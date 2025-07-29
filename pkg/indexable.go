@@ -12,4 +12,7 @@ type IndexableSymbol interface {
 	//   - var_mypackage_GlobalCounter.go
 	//   - const_mypackage_DefaultTimeout.go
 	IndexFileName() string
+	String() string
+	PackagePath() string
+	Imports() string
 }

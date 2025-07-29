@@ -5,8 +5,7 @@ import "fmt"
 // VariableInfo contains information about variable declarations
 type VariableInfo struct {
 	*Range
-	Name        string
-	PackagePath string
+	Name string
 }
 
 // IndexFileName generates a predictable index file name for this variable

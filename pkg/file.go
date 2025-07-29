@@ -51,6 +51,10 @@ func (f *FileInfo) Imports() string {
 	return strings.Join(imports, "\n")
 }
 
+func (f *FileInfo) PackagePath() string {
+	return f.Package
+}
+
 // String reads and returns the content of the file
 func (f *FileInfo) String() string {
 	// Check cache with read lock

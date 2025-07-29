@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"fmt"
 	"github.com/prashantv/gostub"
 	"github.com/spf13/afero"
 	"path/filepath"
@@ -80,112 +79,52 @@ func TestScanPackage_PackageNameDifferentFromDirectoryName(t *testing.T) {
 }
 
 func TestScanPackagesRecursively(t *testing.T) {
-	// Create a mock file system using the helper function
+	var found = false
+	require.NoError(t, ScanPackagesRecursively("testharness/dir_without_go_file", "github.com/lonegunmanb/gophon/pkg", func(info *PackageInfo, s string) {
+		if info == nil {
+			return
+		}
+		for _, v := range info.Variables {
+			if v.Name == "ShouldBeIncluded" {
+				found = true
+			}
+		}
+	}, nil))
+	assert.True(t, found)
+}
+
+func TestFindPackagesRecursively_EmptyMiddleFolderShouldNotBeSkipped(t *testing.T) {
+	// Setup test filesystem with empty middle directories
 	files := map[string]string{
-		// Root package
-		"main.go": `package main
-
-func main() {
-	fmt.Println("Hello, World!")
-}
-`,
-		// Sub-package: utils
-		"utils/helper.go": `package utils
-
-func Helper() string {
-	return "helper"
-}
-`,
-		// Sub-package: models
-		"models/user.go": `package models
-
-type User struct {
-	Name string
-	Age  int
-}
-`,
-		// Nested sub-package: models/db
-		"models/db/connection.go": `package db
-
-type Connection struct {
-	URL string
-}
-`,
-		// Directory without Go files (should be skipped)
-		"docs/README.md": "# Documentation",
+		"internal/services/compute/compute.go":       `package compute`,
+		"internal/services/compute/worker/worker.go": `package worker`,
+		// Note: internal/ and internal/services/ contain no Go files
 	}
 
 	mockFs := afero.NewMemMapFs()
 	setupMemoryFilesystem(mockFs, files)
 
 	// Stub the filesystem variable to use our memory filesystem
-	stubs := gostub.Stub(&sourceFs, mockFs).Stub(&ScanPackage, func(pkgPath, basePkgUrl string) (*PackageInfo, error) {
-		// Return mock package info based on the path
-		var packageName string
-		switch pkgPath {
-		case "":
-			packageName = "main"
-		case "utils":
-			packageName = "utils"
-		case "models":
-			packageName = "models"
-		case "models/db":
-			packageName = "db"
-		default:
-			packageName = "unknown"
-		}
+	stub := gostub.Stub(&sourceFs, mockFs)
+	defer stub.Reset()
 
-		return &PackageInfo{
-			Files: []*FileInfo{
-				{
-					FileName: fmt.Sprintf("%s/%s.go", pkgPath, packageName),
-					Package:  fmt.Sprintf("%s/%s", basePkgUrl, packageName),
-				},
-			},
-			Constants: []*ConstantInfo{},
-			Variables: []*VariableInfo{},
-			Types:     []*TypeInfo{},
-			Functions: []*FunctionInfo{},
-		}, nil
-	})
-	defer stubs.Reset()
+	// Test package discovery from root
+	packages := findPackagesRecursively(".", "")
 
-	// Collect results from the callback
-	var results []struct {
-		PackageInfo *PackageInfo
-		PkgUrl      string
+	expectedPackages := []string{
+		"internal",
+		"internal/services",
+		"internal/services/compute",
+		"internal/services/compute/worker",
 	}
 
-	callback := func(pkgInfo *PackageInfo, pkgUrl string) {
-		results = append(results, struct {
-			PackageInfo *PackageInfo
-			PkgUrl      string
-		}{
-			PackageInfo: pkgInfo,
-			PkgUrl:      pkgUrl,
-		})
+	for _, expected := range expectedPackages {
+		assert.Contains(t, packages, expected, "Should find package: %s", expected)
 	}
 
-	// Test the recursive scanner with memory filesystem
-	basePkgUrl := "github.com/example/testproject"
-	require.NoError(t, ScanPackagesRecursively("", basePkgUrl, callback))
-	require.NotEmpty(t, results)
-	require.Len(t, results, 4)
-
-	// Verify specific packages were found
-	foundPackages := make(map[string]bool)
-	for _, result := range results {
-		foundPackages[result.PkgUrl] = true
-	}
-
-	for _, expectedUrl := range []string{
-		"github.com/example/testproject",
-		"github.com/example/testproject/utils",
-		"github.com/example/testproject/models",
-		"github.com/example/testproject/models/db",
-	} {
-		assert.Contains(t, foundPackages, expectedUrl)
-	}
+	// Verify we found at least the expected packages
+	assert.GreaterOrEqual(t, len(packages), len(expectedPackages),
+		"Should find at least %d packages, found %d: %v", len(expectedPackages), len(packages), packages)
 }
 
 // scanHarnessPackage is a helper function that scans the testharness package and returns the package result

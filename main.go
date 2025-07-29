@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/lonegunmanb/gophon/pkg"
 )
@@ -56,11 +57,76 @@ func main() {
 	fmt.Printf("Destination: %s\n", absDestDir)
 	fmt.Printf("\nGenerating index files...\n")
 
-	// Call IndexSourceCode to generate index files
-	err = pkg.IndexSourceCode(*pkgPath, *basePkgUrl, absDestDir)
+	// Track start time for elapsed time and ETA calculations
+	startTime := time.Now()
+	
+	// Create progress callback with rich visual feedback
+	progressCallback := func(progress pkg.ProgressInfo) {
+		elapsed := time.Since(startTime)
+		
+		// Calculate ETA
+		var eta time.Duration
+		if progress.Percentage > 0 {
+			totalEstimated := elapsed * time.Duration(100.0/progress.Percentage)
+			eta = totalEstimated - elapsed
+		}
+
+		// Progress bar visualization
+		barWidth := 50
+		filled := int(float64(barWidth) * progress.Percentage / 100.0)
+		bar := ""
+		for i := 0; i < barWidth; i++ {
+			if i < filled {
+				bar += "█"
+			} else {
+				bar += "░"
+			}
+		}
+
+		// Truncate current package path if too long
+		current := progress.Current
+		if len(current) > 30 {
+			current = "..." + current[len(current)-27:]
+		}
+
+		// Calculate processing rate
+		var rate float64
+		if elapsed.Seconds() > 0 {
+			rate = float64(progress.Completed) / elapsed.Seconds()
+		}
+
+		// Display progress with rich formatting
+		fmt.Printf("\r[%s] %.1f%% (%d/%d) | ⏱️ %.1fs", 
+			bar, progress.Percentage, progress.Completed, progress.Total, elapsed.Seconds())
+		
+		if progress.Percentage > 0 && progress.Percentage < 100 {
+			fmt.Printf(" | 🔮 ETA: %.1fs", eta.Seconds())
+		}
+		
+		if current != "Completed" {
+			fmt.Printf(" | 📦 %s", current)
+		}
+		
+		if rate > 0 {
+			fmt.Printf(" | ⚡ %.1f pkg/s", rate)
+		}
+		
+		if progress.Percentage >= 100 {
+			fmt.Printf("\n")
+		}
+	}
+
+	// Call IndexSourceCode with progress callback
+	err = pkg.IndexSourceCode(*pkgPath, *basePkgUrl, absDestDir, progressCallback)
 	if err != nil {
 		log.Fatalf("Failed to generate index files: %v", err)
 	}
 
-	fmt.Printf("✓ Index files generated successfully in: %s\n", absDestDir)
+	// Calculate final statistics
+	elapsed := time.Since(startTime)
+	
+	fmt.Printf("✅ Index generation completed successfully!\n")
+	fmt.Printf("📊 Summary:\n")
+	fmt.Printf("   • Total time: %.1fs\n", elapsed.Seconds())
+	fmt.Printf("   • Output directory: %s\n", absDestDir)
 }

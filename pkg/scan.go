@@ -7,15 +7,31 @@ import (
 	"go/token"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"golang.org/x/tools/go/packages"
 )
 
 var sourceFs = afero.NewOsFs()
 
+// ProgressInfo represents progress information during package scanning
+type ProgressInfo struct {
+	Completed  int     // Number of packages completed
+	Total      int     // Total number of packages discovered so far
+	Current    string  // Currently processing package path
+	Percentage float64 // Completion percentage (completed/total * 100)
+}
+
 // ScanSinglePackage scans the specified package and returns comprehensive information
 func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
-	loadPath := fmt.Sprintf("%s/%s", basePkgUrl, pkgPath)
+	// Use relative path for packages.Load to work with local filesystem
+	var loadPath string
+	if pkgPath == "" {
+		loadPath = "."
+	} else {
+		loadPath = "./" + pkgPath
+	}
+	
 	cfg := &packages.Config{
 		Mode: packages.NeedFiles | packages.NeedName | packages.NeedImports | packages.NeedTypes | packages.NeedSyntax,
 	}
@@ -206,25 +222,82 @@ func extractFunctionDeclarations(funcDecl *ast.FuncDecl, pkg *packages.Package, 
 //   - pkgPath: The relative package path to start scanning from (e.g., "pkg/utils")
 //   - basePkgUrl: The base package URL/module path (e.g., "github.com/user/project")
 //   - callback: Function called for each package, receives *PackageInfo and full package URL
-func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageInfo, string)) error {
-	// Scan the current package
-	packageInfo, err := ScanPackage(pkgPath, basePkgUrl)
-	if err != nil {
-		return fmt.Errorf("failed to scan package %s: %w", pkgPath, err)
+//   - progressCallback: Optional callback for progress updates, receives ProgressInfo
+func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageInfo, string), progressCallback func(ProgressInfo)) error {
+	// First, discover all packages to get accurate total count
+	allPackages := findSubPackages(pkgPath)
+	if pkgPath != "" || len(allPackages) == 0 {
+		// Include the root package if we're scanning from a specific path or if no sub-packages found
+		allPackages = append([]string{pkgPath}, allPackages...)
 	}
 
-	// Calculate the full package URL
-	var fullPkgUrl string
-	if pkgPath == "" {
-		fullPkgUrl = basePkgUrl
-	} else {
-		fullPkgUrl = fmt.Sprintf("%s/%s", basePkgUrl, pkgPath)
+	var completedWork int
+	totalDiscovered := len(allPackages)
+	var mu sync.Mutex
+
+	// Helper function to report progress
+	reportProgress := func(current string) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		var percentage float64
+		if totalDiscovered > 0 {
+			percentage = float64(completedWork) / float64(totalDiscovered) * 100.0
+		}
+
+		if progressCallback != nil {
+			progressCallback(ProgressInfo{
+				Completed:  completedWork,
+				Total:      totalDiscovered,
+				Current:    current,
+				Percentage: percentage,
+			})
+		}
 	}
 
-	// Invoke callback for current package
-	callback(packageInfo, fullPkgUrl)
+	// Process each package
+	for _, currentPkgPath := range allPackages {
+		// Report progress before processing
+		reportProgress(currentPkgPath)
 
-	// Determine the physical directory path to scan for subdirectories
+		// Scan the current package
+		packageInfo, err := ScanPackage(currentPkgPath, basePkgUrl)
+		if err != nil {
+			return fmt.Errorf("failed to scan package %s: %w", currentPkgPath, err)
+		}
+
+		// Calculate the full package URL
+		var fullPkgUrl string
+		if currentPkgPath == "" {
+			fullPkgUrl = basePkgUrl
+		} else {
+			fullPkgUrl = fmt.Sprintf("%s/%s", basePkgUrl, currentPkgPath)
+		}
+
+		// Invoke callback for current package
+		callback(packageInfo, fullPkgUrl)
+
+		// Update completed count
+		mu.Lock()
+		completedWork++
+		mu.Unlock()
+	}
+
+	// Report final 100% completion
+	if progressCallback != nil {
+		progressCallback(ProgressInfo{
+			Completed:  totalDiscovered,
+			Total:      totalDiscovered,
+			Current:    "Completed",
+			Percentage: 100.0,
+		})
+	}
+
+	return nil
+}
+
+// findSubPackages discovers all sub-packages under the given package path
+func findSubPackages(pkgPath string) []string {
 	var dirPath string
 	if pkgPath == "" {
 		dirPath = "."
@@ -232,45 +305,43 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 		dirPath = pkgPath
 	}
 
-	// Read directory contents using afero filesystem
+	// Use recursive helper function
+	return findPackagesRecursively(dirPath, pkgPath)
+}
+
+// findPackagesRecursively recursively discovers all packages in directory structure
+func findPackagesRecursively(dirPath, pkgPath string) []string {
+	var subPackages []string
+
 	entries, err := afero.ReadDir(sourceFs, dirPath)
 	if err != nil {
-		// If we can't read the directory, just return without error
-		// This handles cases where the package path doesn't correspond to a physical directory
-		return nil
+		return subPackages
 	}
 
-	// Recursively scan subdirectories that contain Go files
 	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		// Skip common non-package directories
-		if shouldSkipDirectory(entry.Name()) {
+		if !entry.IsDir() || shouldSkipDirectory(entry.Name()) {
 			continue
 		}
 
 		subDirPath := filepath.Join(dirPath, entry.Name())
 
-		// Check if the subdirectory contains any .go files
-		if hasGoFiles(subDirPath) {
-			// Construct the sub-package path
-			var subPkgPath string
-			if pkgPath == "" {
-				subPkgPath = entry.Name()
-			} else {
-				subPkgPath = fmt.Sprintf("%s/%s", pkgPath, entry.Name())
-			}
-
-			// Recursively scan the sub-package
-			if err = ScanPackagesRecursively(subPkgPath, basePkgUrl, callback); err != nil {
-				return fmt.Errorf("failed to scan sub-package %s: %w", subPkgPath, err)
-			}
+		// Construct sub-package path
+		var subPkgPath string
+		if pkgPath == "" {
+			subPkgPath = entry.Name()
+		} else {
+			subPkgPath = fmt.Sprintf("%s/%s", pkgPath, entry.Name())
 		}
+
+		// FIXED: Add ALL directories to scan queue
+		subPackages = append(subPackages, subPkgPath)
+
+		// FIXED: Recursively search subdirectories
+		nestedPackages := findPackagesRecursively(subDirPath, subPkgPath)
+		subPackages = append(subPackages, nestedPackages...)
 	}
 
-	return nil
+	return subPackages
 }
 
 // shouldSkipDirectory determines if a directory should be skipped during package scanning
@@ -289,25 +360,6 @@ func shouldSkipDirectory(dirName string) bool {
 	}
 
 	return skipDirs[dirName]
-}
-
-// hasGoFiles checks if a directory contains any .go files
-func hasGoFiles(dirPath string) bool {
-	entries, err := afero.ReadDir(sourceFs, dirPath)
-	if err != nil {
-		return false
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".go") {
-			// Skip test files for package detection
-			if !strings.HasSuffix(entry.Name(), "_test.go") {
-				return true
-			}
-		}
-	}
-
-	return false
 }
 
 // ScanPackage is an alias for ScanSinglePackage for backward compatibility

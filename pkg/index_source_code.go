@@ -20,7 +20,8 @@ var destFs = afero.NewOsFs()
 //   - basePkgUrl: The base package URL/module path (e.g., "github.com/lonegunmanb/gophon/pkg")
 //   - destFs: The destination filesystem where index files will be written
 //   - destFolder: The destination folder path where index files will be organized
-func IndexSourceCode(pkgPath, basePkgUrl string, destFolder string) error {
+//   - progressCallback: Optional callback for progress updates, receives ProgressInfo
+func IndexSourceCode(pkgPath, basePkgUrl string, destFolder string, progressCallback func(ProgressInfo)) error {
 	// Define the callback function that will be called for each package
 	callback := func(pkgInfo *PackageInfo, pkgUrl string) {
 		// Extract the relative package path from the full package URL
@@ -37,8 +38,13 @@ func IndexSourceCode(pkgPath, basePkgUrl string, destFolder string) error {
 		saveIndexes(pkgDestDir, pkgInfo.Functions)
 	}
 
-	// Call ScanPackagesRecursively with our callback
-	return ScanPackagesRecursively(pkgPath, basePkgUrl, callback)
+	// Call ScanPackagesRecursively with our callback and progress callback
+	return ScanPackagesRecursively(pkgPath, basePkgUrl, callback, progressCallback)
+}
+
+// IndexSourceCodeWithoutProgress provides backward compatibility for the old function signature
+func IndexSourceCodeWithoutProgress(pkgPath, basePkgUrl string, destFolder string) error {
+	return IndexSourceCode(pkgPath, basePkgUrl, destFolder, nil)
 }
 
 // saveConstants creates index files for all constants in the package

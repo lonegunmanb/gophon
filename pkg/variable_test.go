@@ -11,8 +11,8 @@ func TestScanPackage_ExtractsVariables(t *testing.T) {
 	// Act
 	packageResult := scanHarnessPackage(t)
 
-	// Assert - check that variables are extracted
-	assert.Len(t, packageResult.Variables, 2, "Should extract 2 global variables from test harness")
+	// Assert - check that variables are extracted (should be 2, not 3, because blank identifier should be skipped)
+	assert.Len(t, packageResult.Variables, 2, "Should extract 2 global variables from test harness (blank identifier should be skipped)")
 
 	// Find specific variables we expect
 	globalCounterVar := findVariableByName(packageResult.Variables, "GlobalCounter")
@@ -37,6 +37,20 @@ func TestScanPackage_ExtractsVariables(t *testing.T) {
 
 	// Assert String() method returns the exact source code from subjects.go
 	assert.Equal(t, "\tisDebugMode bool = false", isDebugModeVar.String(), "IsDebugMode String() should return exact source code line")
+}
+
+func TestScanPackage_SkipsBlankIdentifierVariables(t *testing.T) {
+	// Act
+	packageResult := scanHarnessPackage(t)
+
+	// Assert - verify that no variable with blank identifier "_" is extracted
+	for _, variable := range packageResult.Variables {
+		assert.NotEqual(t, "_", variable.Name, "Blank identifier variables should be skipped during scanning")
+	}
+
+	// Also verify we don't have any variables that would be from the blank identifier line
+	blankVar := findVariableByName(packageResult.Variables, "_")
+	assert.Empty(t, blankVar.Name, "Should not find any variable with blank identifier name")
 }
 
 func TestScanPackage_VariablePackagePath(t *testing.T) {

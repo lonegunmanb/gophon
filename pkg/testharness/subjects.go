@@ -18,6 +18,8 @@ var (
 	GlobalCounter int64
 	//internal variable for testing
 	isDebugMode bool = false
+	// Blank identifier variable should be ignored during indexing
+	_ = "should be ignored"
 )
 
 type StringA string

@@ -112,6 +112,11 @@ func extractDeclarations[T any](pkgPath string, genDecl *ast.GenDecl, pkg *packa
 	for _, spec := range genDecl.Specs {
 		if valueSpec, ok := spec.(*ast.ValueSpec); ok {
 			for _, name := range valueSpec.Names {
+				// Skip blank identifier variables
+				if name.Name == "_" {
+					continue
+				}
+
 				// Get line numbers for the declaration
 				startPos := pkg.Fset.Position(spec.Pos())
 				endPos := pkg.Fset.Position(spec.End())

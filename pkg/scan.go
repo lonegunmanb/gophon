@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/token"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -234,6 +235,7 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 	var completedWork int
 	totalDiscovered := len(allPackages)
 	var mu sync.Mutex
+	var wg sync.WaitGroup
 
 	// Helper function to report progress
 	reportProgress := func(current string) {
@@ -255,32 +257,67 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 		}
 	}
 
-	// Process each package
-	for _, currentPkgPath := range allPackages {
-		// Report progress before processing
-		reportProgress(currentPkgPath)
+	// Create a channel for work distribution
+	workChan := make(chan string, len(allPackages))
+	
+	// Create error channel to collect errors from workers
+	errChan := make(chan error, len(allPackages))
+	
+	// Determine number of workers (limited by CPU count)
+	numWorkers := runtime.NumCPU()
+	if numWorkers > len(allPackages) {
+		numWorkers = len(allPackages)
+	}
 
-		// Scan the current package
-		packageInfo, err := ScanPackage(currentPkgPath, basePkgUrl)
+	// Start worker goroutines
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			
+			for currentPkgPath := range workChan {
+				// Report progress before processing
+				reportProgress(currentPkgPath)
+
+				// Scan the current package
+				packageInfo, err := ScanPackage(currentPkgPath, basePkgUrl)
+				if err != nil {
+					errChan <- fmt.Errorf("failed to scan package %s: %w", currentPkgPath, err)
+					continue
+				}
+
+				// Calculate the full package URL
+				var fullPkgUrl string
+				if currentPkgPath == "" {
+					fullPkgUrl = basePkgUrl
+				} else {
+					fullPkgUrl = fmt.Sprintf("%s/%s", basePkgUrl, currentPkgPath)
+				}
+
+				// Invoke callback for current package (protect with mutex for thread safety)
+				mu.Lock()
+				callback(packageInfo, fullPkgUrl)
+				completedWork++
+				mu.Unlock()
+			}
+		}()
+	}
+
+	// Send all packages to work channel
+	for _, pkg := range allPackages {
+		workChan <- pkg
+	}
+	close(workChan)
+
+	// Wait for all workers to complete
+	wg.Wait()
+	close(errChan)
+
+	// Check for any errors
+	for err := range errChan {
 		if err != nil {
-			return fmt.Errorf("failed to scan package %s: %w", currentPkgPath, err)
+			return err
 		}
-
-		// Calculate the full package URL
-		var fullPkgUrl string
-		if currentPkgPath == "" {
-			fullPkgUrl = basePkgUrl
-		} else {
-			fullPkgUrl = fmt.Sprintf("%s/%s", basePkgUrl, currentPkgPath)
-		}
-
-		// Invoke callback for current package
-		callback(packageInfo, fullPkgUrl)
-
-		// Update completed count
-		mu.Lock()
-		completedWork++
-		mu.Unlock()
 	}
 
 	// Report final 100% completion

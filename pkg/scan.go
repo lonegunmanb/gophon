@@ -45,15 +45,15 @@ func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 	}
 	actualPkgPath := strings.Join(pathParts, "/")
 
-	var files []FileInfo
-	var constants []ConstantInfo
-	var variables []VariableInfo
-	var types []TypeInfo
-	var functions []FunctionInfo
+	var files []*FileInfo
+	var constants []*ConstantInfo
+	var variables []*VariableInfo
+	var types []*TypeInfo
+	var functions []*FunctionInfo
 
 	// Extract file information
 	for _, file := range pkg.GoFiles {
-		files = append(files, FileInfo{
+		files = append(files, &FileInfo{
 			FileName: file,
 			Package:  actualPkgPath,
 		})
@@ -75,24 +75,24 @@ func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 		for _, decl := range file.Decls {
 			if genDecl, ok := decl.(*ast.GenDecl); ok {
 				if genDecl.Tok == token.CONST {
-					constants = append(constants, extractDeclarations(actualPkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) ConstantInfo {
-						return ConstantInfo{
+					constants = append(constants, extractDeclarations(actualPkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) *ConstantInfo {
+						return &ConstantInfo{
 							Name:  name,
 							Range: rangeInfo,
 						}
 					})...)
 				} else if genDecl.Tok == token.VAR {
-					variables = append(variables, extractDeclarations(actualPkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) VariableInfo {
-						return VariableInfo{
+					variables = append(variables, extractDeclarations(actualPkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) *VariableInfo {
+						return &VariableInfo{
 							Name:  name,
 							Range: rangeInfo,
 						}
 					})...)
 				} else if genDecl.Tok == token.TYPE {
-					types = append(types, extractTypeDeclarations(actualPkgPath, genDecl, pkg, fileInfo)...)
+					types = append(types, extractTypeDeclarations(genDecl, pkg, fileInfo)...)
 				}
 			} else if funcDecl, ok := decl.(*ast.FuncDecl); ok {
-				functions = append(functions, extractFunctionDeclarations(actualPkgPath, funcDecl, pkg, fileInfo)...)
+				functions = append(functions, extractFunctionDeclarations(funcDecl, pkg, fileInfo)...)
 			}
 		}
 	}
@@ -107,8 +107,8 @@ func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 }
 
 // Generic function to extract declarations from AST
-func extractDeclarations[T any](pkgPath string, genDecl *ast.GenDecl, pkg *packages.Package, fileInfo *FileInfo, createFunc func(name string, pkgPath string, rangeInfo *Range) T) []T {
-	var results []T
+func extractDeclarations[T any](pkgPath string, genDecl *ast.GenDecl, pkg *packages.Package, fileInfo *FileInfo, createFunc func(name string, pkgPath string, rangeInfo *Range) *T) []*T {
+	var results []*T
 	for _, spec := range genDecl.Specs {
 		if valueSpec, ok := spec.(*ast.ValueSpec); ok {
 			for _, name := range valueSpec.Names {
@@ -136,8 +136,8 @@ func extractDeclarations[T any](pkgPath string, genDecl *ast.GenDecl, pkg *packa
 }
 
 // Extract type declarations from AST
-func extractTypeDeclarations(pkgPath string, genDecl *ast.GenDecl, pkg *packages.Package, fileInfo *FileInfo) []TypeInfo {
-	var results []TypeInfo
+func extractTypeDeclarations(genDecl *ast.GenDecl, pkg *packages.Package, fileInfo *FileInfo) []*TypeInfo {
+	var results []*TypeInfo
 	for _, spec := range genDecl.Specs {
 		if typeSpec, ok := spec.(*ast.TypeSpec); ok {
 			// Get line numbers for the type declaration
@@ -150,7 +150,7 @@ func extractTypeDeclarations(pkgPath string, genDecl *ast.GenDecl, pkg *packages
 				EndLine:   endPos.Line,
 			}
 
-			results = append(results, TypeInfo{
+			results = append(results, &TypeInfo{
 				Name:  typeSpec.Name.Name,
 				Range: rangeInfo,
 			})
@@ -160,8 +160,8 @@ func extractTypeDeclarations(pkgPath string, genDecl *ast.GenDecl, pkg *packages
 }
 
 // Extract function declarations from AST
-func extractFunctionDeclarations(pkgPath string, funcDecl *ast.FuncDecl, pkg *packages.Package, fileInfo *FileInfo) []FunctionInfo {
-	var results []FunctionInfo
+func extractFunctionDeclarations(funcDecl *ast.FuncDecl, pkg *packages.Package, fileInfo *FileInfo) []*FunctionInfo {
+	var results []*FunctionInfo
 
 	// Get line numbers for the function declaration
 	startPos := pkg.Fset.Position(funcDecl.Pos())
@@ -188,7 +188,7 @@ func extractFunctionDeclarations(pkgPath string, funcDecl *ast.FuncDecl, pkg *pa
 		}
 	}
 
-	results = append(results, FunctionInfo{
+	results = append(results, &FunctionInfo{
 		Range:        rangeInfo,
 		Name:         funcDecl.Name.Name,
 		ReceiverType: receiverType,

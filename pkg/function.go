@@ -15,7 +15,7 @@ type FunctionInfo struct {
 // IndexFileName generates a predictable index file name for this function or method
 // For functions: func.<FunctionName>.goindex
 // For methods: method.<ReceiverType>.<MethodName>.goindex (strips * from pointer receivers)
-func (f FunctionInfo) IndexFileName() string {
+func (f *FunctionInfo) IndexFileName() string {
 	if f.ReceiverType == "" {
 		// Regular function
 		return fmt.Sprintf("func.%s.goindex", f.Name)

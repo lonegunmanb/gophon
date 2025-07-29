@@ -136,16 +136,16 @@ type Connection struct {
 		}
 
 		return &PackageInfo{
-			Files: []FileInfo{
+			Files: []*FileInfo{
 				{
 					FileName: fmt.Sprintf("%s/%s.go", pkgPath, packageName),
 					Package:  fmt.Sprintf("%s/%s", basePkgUrl, packageName),
 				},
 			},
-			Constants: []ConstantInfo{},
-			Variables: []VariableInfo{},
-			Types:     []TypeInfo{},
-			Functions: []FunctionInfo{},
+			Constants: []*ConstantInfo{},
+			Variables: []*VariableInfo{},
+			Types:     []*TypeInfo{},
+			Functions: []*FunctionInfo{},
 		}, nil
 	})
 	defer stubs.Reset()

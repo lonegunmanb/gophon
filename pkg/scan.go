@@ -6,7 +6,9 @@ import (
 	"go/ast"
 	"go/token"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -199,31 +201,114 @@ func extractFunctionDeclarations(funcDecl *ast.FuncDecl, pkg *packages.Package, 
 }
 
 // ScanPackagesRecursively recursively scans all packages starting from the specified path
-// and invokes the callback function for each package found. It uses afero.Fs for file system operations
-// to enable easy testing with mocked file systems.
+// and invokes the callback function for each package found. It uses a worker pool pattern
+// with goroutines limited to the number of processors for optimal performance.
 // Parameters:
-//   - fs: The afero filesystem to use for file operations
 //   - pkgPath: The relative package path to start scanning from (e.g., "pkg/utils")
 //   - basePkgUrl: The base package URL/module path (e.g., "github.com/user/project")
 //   - callback: Function called for each package, receives *PackageInfo and full package URL
 func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageInfo, string)) error {
-	// Scan the current package
-	packageInfo, err := ScanPackage(pkgPath, basePkgUrl)
-	if err != nil {
-		return fmt.Errorf("failed to scan package %s: %w", pkgPath, err)
+	// Use a worker pool with goroutines limited to the number of processors
+	numWorkers := runtime.NumCPU()
+	
+	// Channel for work items (package paths to scan)
+	workChan := make(chan scanWork, 100)
+	
+	// Channel for results
+	resultChan := make(chan scanResult, 100)
+	
+	// WaitGroup to track workers
+	var wg sync.WaitGroup
+	
+	// Start workers
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			scanWorker(workChan, resultChan)
+		}()
 	}
-
-	// Calculate the full package URL
-	var fullPkgUrl string
-	if pkgPath == "" {
-		fullPkgUrl = basePkgUrl
-	} else {
-		fullPkgUrl = fmt.Sprintf("%s/%s", basePkgUrl, pkgPath)
+	
+	// Start a goroutine to close result channel when all workers are done
+	go func() {
+		wg.Wait()
+		close(resultChan)
+	}()
+	
+	// Send initial work item
+	workChan <- scanWork{pkgPath: pkgPath, basePkgUrl: basePkgUrl}
+	
+	// Keep track of pending work to know when to close workChan
+	pendingWork := 1
+	var mu sync.Mutex
+	
+	// Process results and generate more work
+	for result := range resultChan {
+		if result.err != nil {
+			close(workChan)
+			return fmt.Errorf("failed to scan package %s: %w", result.work.pkgPath, result.err)
+		}
+		
+		// Calculate the full package URL
+		var fullPkgUrl string
+		if result.work.pkgPath == "" {
+			fullPkgUrl = result.work.basePkgUrl
+		} else {
+			fullPkgUrl = fmt.Sprintf("%s/%s", result.work.basePkgUrl, result.work.pkgPath)
+		}
+		
+		// Invoke callback for current package
+		callback(result.packageInfo, fullPkgUrl)
+		
+		// Find subdirectories and add them as new work items
+		subPackages := findSubPackages(result.work.pkgPath)
+		
+		mu.Lock()
+		for _, subPkg := range subPackages {
+			workChan <- scanWork{pkgPath: subPkg, basePkgUrl: result.work.basePkgUrl}
+			pendingWork++
+		}
+		pendingWork--
+		
+		// Close work channel when no more work is pending
+		if pendingWork == 0 {
+			close(workChan)
+		}
+		mu.Unlock()
 	}
+	
+	return nil
+}
 
-	// Invoke callback for current package
-	callback(packageInfo, fullPkgUrl)
+// scanWork represents a work item for the worker pool
+type scanWork struct {
+	pkgPath    string
+	basePkgUrl string
+}
 
+// scanResult represents the result of scanning a package
+type scanResult struct {
+	work        scanWork
+	packageInfo *PackageInfo
+	err         error
+}
+
+// scanWorker is a worker function that processes scan work items
+func scanWorker(workChan <-chan scanWork, resultChan chan<- scanResult) {
+	for work := range workChan {
+		packageInfo, err := ScanPackage(work.pkgPath, work.basePkgUrl)
+		resultChan <- scanResult{
+			work:        work,
+			packageInfo: packageInfo,
+			err:         err,
+		}
+	}
+}
+
+// findSubPackages finds all sub-packages within the given package path
+func findSubPackages(pkgPath string) []string {
+	var subPackages []string
+	
 	// Determine the physical directory path to scan for subdirectories
 	var dirPath string
 	if pkgPath == "" {
@@ -235,12 +320,11 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 	// Read directory contents using afero filesystem
 	entries, err := afero.ReadDir(sourceFs, dirPath)
 	if err != nil {
-		// If we can't read the directory, just return without error
-		// This handles cases where the package path doesn't correspond to a physical directory
-		return nil
+		// If we can't read the directory, return empty slice
+		return subPackages
 	}
 
-	// Recursively scan subdirectories that contain Go files
+	// Find subdirectories that contain Go files
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
@@ -263,14 +347,11 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 				subPkgPath = fmt.Sprintf("%s/%s", pkgPath, entry.Name())
 			}
 
-			// Recursively scan the sub-package
-			if err = ScanPackagesRecursively(subPkgPath, basePkgUrl, callback); err != nil {
-				return fmt.Errorf("failed to scan sub-package %s: %w", subPkgPath, err)
-			}
+			subPackages = append(subPackages, subPkgPath)
 		}
 	}
-
-	return nil
+	
+	return subPackages
 }
 
 // shouldSkipDirectory determines if a directory should be skipped during package scanning

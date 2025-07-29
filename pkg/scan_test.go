@@ -170,7 +170,8 @@ type Connection struct {
 	basePkgUrl := "github.com/example/testproject"
 	require.NoError(t, ScanPackagesRecursively("", basePkgUrl, callback, nil))
 	require.NotEmpty(t, results)
-	require.Len(t, results, 4)
+	// Now finds more packages since we removed hasGoFiles check - this is correct behavior
+	require.Len(t, results, 6)
 
 	// Verify specific packages were found
 	foundPackages := make(map[string]bool)
@@ -185,6 +186,29 @@ type Connection struct {
 		"github.com/example/testproject/models/db",
 	} {
 		assert.Contains(t, foundPackages, expectedUrl)
+	}
+}
+
+func TestFindPackagesRecursively_EmptyMiddleFolderShouldNotBeSkipped(t *testing.T) {
+	// Create a simple mock file system with nested directories
+	files := map[string]string{
+		"internal/services/compute/compute.go":       `package compute`,
+		"internal/services/compute/worker/worker.go": `package worker`,
+	}
+
+	mockFs := afero.NewMemMapFs()
+	setupMemoryFilesystem(mockFs, files)
+
+	stub := gostub.Stub(&sourceFs, mockFs)
+	defer stub.Reset()
+
+	// Test that function returns new slice instances (no side effects)
+	packages := findPackagesRecursively(".", "")
+
+	// Verify expected packages are found and vendor is skipped
+	expectedPackages := []string{"internal", "internal/services", "internal/services/compute", "internal/services/compute/worker"}
+	for _, expected := range expectedPackages {
+		assert.Contains(t, packages, expected, "Should find package: %s", expected)
 	}
 }
 

@@ -37,5 +37,5 @@ func (r *Range) String() string {
 	// Extract the specified lines
 	selectedLines := lines[startIdx : endIdx+1]
 
-	return strings.Join(selectedLines, "\n")
+	return strings.ReplaceAll(strings.Join(selectedLines, "\n"), "\r", "")
 }

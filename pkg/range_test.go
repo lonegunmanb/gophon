@@ -157,7 +157,7 @@ func TestRange_String_WithActualFile(t *testing.T) {
 				// Verify the actual content matches the expected lines from the file
 				expectedLines := lines[tc.startLine-1 : tc.endLine]
 				expectedContent := strings.Join(expectedLines, "\n")
-				assert.Equal(t, expectedContent, result, "Should return the exact lines from the file")
+				assert.Equal(t, strings.ReplaceAll(expectedContent, "\r", ""), result, "Should return the exact lines from the file")
 			})
 		}
 	}

@@ -36,10 +36,10 @@ func TestScanPackage_ExtractsConstants(t *testing.T) {
 }
 
 // findConstantByName is a helper function that finds a constant by name in a slice of ConstantInfo
-func findConstantByName(constants []ConstantInfo, name string) *ConstantInfo {
+func findConstantByName(constants []*ConstantInfo, name string) *ConstantInfo {
 	for i := range constants {
 		if constants[i].Name == name {
-			return &constants[i]
+			return constants[i]
 		}
 	}
 	return nil
@@ -77,7 +77,7 @@ func TestConstantInfo_IndexFileName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
-			constant := ConstantInfo{
+			constant := &ConstantInfo{
 				Name: tt.constantName,
 				Range: &Range{
 					FileInfo: &FileInfo{

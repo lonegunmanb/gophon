@@ -164,7 +164,7 @@ func TestFunctionInfo_IndexFileName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
-			function := FunctionInfo{
+			function := &FunctionInfo{
 				Name:         tt.functionName,
 				ReceiverType: tt.receiverType,
 				Range: &Range{
@@ -185,20 +185,20 @@ func TestFunctionInfo_IndexFileName(t *testing.T) {
 }
 
 // findFunctionByName is a helper function that finds a function by name in a slice of FunctionInfo
-func findFunctionByName(functions []FunctionInfo, name string) *FunctionInfo {
+func findFunctionByName(functions []*FunctionInfo, name string) *FunctionInfo {
 	for i := range functions {
 		if functions[i].Name == name && functions[i].ReceiverType == "" {
-			return &functions[i]
+			return functions[i]
 		}
 	}
 	return nil
 }
 
 // findMethodByNameAndReceiver is a helper function that finds a method by name and receiver type in a slice of FunctionInfo
-func findMethodByNameAndReceiver(functions []FunctionInfo, name string, receiverType string) *FunctionInfo {
+func findMethodByNameAndReceiver(functions []*FunctionInfo, name string, receiverType string) *FunctionInfo {
 	for i := range functions {
 		if functions[i].Name == name && functions[i].ReceiverType == receiverType {
-			return &functions[i]
+			return functions[i]
 		}
 	}
 	return nil

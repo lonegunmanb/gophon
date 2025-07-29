@@ -50,7 +50,7 @@ func TestScanPackage_SkipsBlankIdentifierVariables(t *testing.T) {
 
 	// Also verify we don't have any variables that would be from the blank identifier line
 	blankVar := findVariableByName(packageResult.Variables, "_")
-	assert.Empty(t, blankVar.Name, "Should not find any variable with blank identifier name")
+	assert.Nil(t, blankVar, "Should not find any variable with blank identifier name")
 }
 
 func TestScanPackage_VariablePackagePath(t *testing.T) {
@@ -91,7 +91,7 @@ func TestVariableInfo_IndexFileName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
-			variable := VariableInfo{
+			variable := &VariableInfo{
 				Name: tt.variableName,
 				Range: &Range{
 					FileInfo: &FileInfo{
@@ -111,7 +111,7 @@ func TestVariableInfo_IndexFileName(t *testing.T) {
 
 func TestVariableInfo_ImplementsIndexableSymbol(t *testing.T) {
 	// Arrange
-	variable := VariableInfo{
+	variable := &VariableInfo{
 		Name: "TestVariable",
 		Range: &Range{
 			FileInfo: &FileInfo{
@@ -126,8 +126,8 @@ func TestVariableInfo_ImplementsIndexableSymbol(t *testing.T) {
 }
 
 // Helper function to find a variable by name
-func findVariableByName(variables []VariableInfo, name string) VariableInfo {
-	var variable VariableInfo
+func findVariableByName(variables []*VariableInfo, name string) *VariableInfo {
+	var variable *VariableInfo
 	for _, v := range variables {
 		if v.Name == name {
 			variable = v

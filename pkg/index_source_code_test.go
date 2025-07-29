@@ -65,11 +65,11 @@ func TestIndexSourceCode_EmptyPackage(t *testing.T) {
 	// Mock ScanPackagesRecursively to return empty package
 	stubs.Stub(&ScanPackage, func(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 		return &PackageInfo{
-			Files:     []FileInfo{},
-			Constants: []ConstantInfo{},
-			Variables: []VariableInfo{},
-			Types:     []TypeInfo{},
-			Functions: []FunctionInfo{},
+			Files:     []*FileInfo{},
+			Constants: []*ConstantInfo{},
+			Variables: []*VariableInfo{},
+			Types:     []*TypeInfo{},
+			Functions: []*FunctionInfo{},
 		}, nil
 	})
 

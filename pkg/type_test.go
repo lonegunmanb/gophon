@@ -97,10 +97,10 @@ func TestScanPackage_TypePackagePath(t *testing.T) {
 }
 
 // findTypeByName is a helper function that finds a type by name in a slice of TypeInfo
-func findTypeByName(types []TypeInfo, name string) *TypeInfo {
+func findTypeByName(types []*TypeInfo, name string) *TypeInfo {
 	for i := range types {
 		if types[i].Name == name {
-			return &types[i]
+			return types[i]
 		}
 	}
 	return nil
@@ -148,7 +148,7 @@ func TestTypeInfo_IndexFileName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Arrange
-			typeInfo := TypeInfo{
+			typeInfo := &TypeInfo{
 				Name: tt.typeName,
 				Range: &Range{
 					FileInfo: &FileInfo{

@@ -19,15 +19,15 @@ func main() {
 	)
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "gophon - Go Project Code Indexing Tool\n\n")
-		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "Options:\n")
+		_, _ = fmt.Fprintf(os.Stderr, "gophon - Go Project Code Indexing Tool\n\n")
+		_, _ = fmt.Fprintf(os.Stderr, "Usage: %s [options]\n\n", os.Args[0])
+		_, _ = fmt.Fprintf(os.Stderr, "Options:\n")
 		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, "\nExamples:\n")
-		fmt.Fprintf(os.Stderr, "  # Index the entire project\n")
-		fmt.Fprintf(os.Stderr, "  %s -base=github.com/lonegunmanb/gophon/pkg -dest=./output\n\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "  # Index a specific package\n")
-		fmt.Fprintf(os.Stderr, "  %s -pkg=testharness -base=github.com/lonegunmanb/gophon/pkg -dest=./output\n\n", os.Args[0])
+		_, _ = fmt.Fprintf(os.Stderr, "\nExamples:\n")
+		_, _ = fmt.Fprintf(os.Stderr, "  # Index the entire project\n")
+		_, _ = fmt.Fprintf(os.Stderr, "  %s -base=github.com/lonegunmanb/gophon/pkg -dest=./output\n\n", os.Args[0])
+		_, _ = fmt.Fprintf(os.Stderr, "  # Index a specific package\n")
+		_, _ = fmt.Fprintf(os.Stderr, "  %s -pkg=testharness -base=github.com/lonegunmanb/gophon/pkg -dest=./output\n\n", os.Args[0])
 	}
 
 	flag.Parse()
@@ -38,7 +38,7 @@ func main() {
 	}
 
 	if *basePkgUrl == "" {
-		fmt.Fprintf(os.Stderr, "Error: -base flag is required\n\n")
+		_, _ = fmt.Fprintf(os.Stderr, "Error: -base flag is required\n\n")
 		flag.Usage()
 		os.Exit(1)
 	}

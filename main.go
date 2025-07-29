@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/lonegunmanb/gophon/pkg"
 )
@@ -54,13 +55,80 @@ func main() {
 	fmt.Printf("Package path: %s\n", *pkgPath)
 	fmt.Printf("Base URL: %s\n", *basePkgUrl)
 	fmt.Printf("Destination: %s\n", absDestDir)
-	fmt.Printf("\nGenerating index files...\n")
+	fmt.Printf("\n🚀 Starting index generation...\n")
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
-	// Call IndexSourceCode to generate index files
-	err = pkg.IndexSourceCode(*pkgPath, *basePkgUrl, absDestDir)
-	if err != nil {
-		log.Fatalf("Failed to generate index files: %v", err)
+	startTime := time.Now()
+	packageCount := 0
+
+	// Progress callback with detailed information
+	progressCallback := func(progress pkg.ProgressInfo) {
+		elapsed := time.Since(startTime)
+		
+		// Calculate estimated time remaining
+		var eta time.Duration
+		if progress.Percentage > 0 {
+			totalEstimated := elapsed * time.Duration(100.0/progress.Percentage)
+			eta = totalEstimated - elapsed
+		}
+
+		// Progress bar
+		barWidth := 50
+		filled := int(float64(barWidth) * progress.Percentage / 100.0)
+		bar := ""
+		for i := 0; i < barWidth; i++ {
+			if i < filled {
+				bar += "█"
+			} else {
+				bar += "░"
+			}
+		}
+
+		// Clear line and show detailed progress
+		fmt.Printf("\r[%s] %.1f%% (%d/%d)", 
+			bar, progress.Percentage, progress.Completed, progress.Total)
+		
+		if progress.Percentage < 100.0 {
+			fmt.Printf(" | ⏱️  %v", elapsed.Round(time.Millisecond))
+			if eta > 0 && eta < time.Hour {
+				fmt.Printf(" | 🔮 ETA: %v", eta.Round(time.Second))
+			}
+			
+			// Truncate package name if too long
+			currentPkg := progress.Current
+			if len(currentPkg) > 50 {
+				currentPkg = "..." + currentPkg[len(currentPkg)-47:]
+			}
+			fmt.Printf(" | 📦 %s", currentPkg)
+		}
+
+		// Show processing rate
+		if progress.Completed > 0 && elapsed > 0 {
+			rate := float64(progress.Completed) / elapsed.Seconds()
+			fmt.Printf(" | ⚡ %.1f pkg/s", rate)
+		}
+
+		// Move to next line when complete
+		if progress.Percentage >= 100.0 {
+			fmt.Printf("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+			packageCount = progress.Completed
+		}
 	}
 
-	fmt.Printf("✓ Index files generated successfully in: %s\n", absDestDir)
+	// Call IndexSourceCode with progress tracking
+	err = pkg.IndexSourceCode(*pkgPath, *basePkgUrl, absDestDir, progressCallback)
+	if err != nil {
+		log.Fatalf("❌ Failed to generate index files: %v", err)
+	}
+
+	// Final summary
+	totalTime := time.Since(startTime)
+	avgRate := float64(packageCount) / totalTime.Seconds()
+
+	fmt.Printf("✅ Index generation completed successfully!\n")
+	fmt.Printf("📊 Summary:\n")
+	fmt.Printf("   • Total packages indexed: %d\n", packageCount)
+	fmt.Printf("   • Total time: %v\n", totalTime.Round(time.Millisecond))
+	fmt.Printf("   • Average rate: %.2f packages/second\n", avgRate)
+	fmt.Printf("   • Output directory: %s\n", absDestDir)
 }

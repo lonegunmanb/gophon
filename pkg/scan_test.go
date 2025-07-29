@@ -168,7 +168,7 @@ type Connection struct {
 
 	// Test the recursive scanner with memory filesystem
 	basePkgUrl := "github.com/example/testproject"
-	require.NoError(t, ScanPackagesRecursively("", basePkgUrl, callback))
+	require.NoError(t, ScanPackagesRecursively("", basePkgUrl, callback, nil))
 	require.NotEmpty(t, results)
 	require.Len(t, results, 4)
 

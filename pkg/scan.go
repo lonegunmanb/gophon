@@ -200,6 +200,14 @@ func extractFunctionDeclarations(funcDecl *ast.FuncDecl, pkg *packages.Package, 
 	return results
 }
 
+// ProgressInfo represents progress information during package scanning
+type ProgressInfo struct {
+	Completed   int     // Number of packages completed
+	Total       int     // Total number of packages discovered so far
+	Current     string  // Currently processing package path
+	Percentage  float64 // Completion percentage (completed/total * 100)
+}
+
 // ScanPackagesRecursively recursively scans all packages starting from the specified path
 // and invokes the callback function for each package found. It uses a worker pool pattern
 // with goroutines limited to the number of processors for optimal performance.
@@ -207,7 +215,8 @@ func extractFunctionDeclarations(funcDecl *ast.FuncDecl, pkg *packages.Package, 
 //   - pkgPath: The relative package path to start scanning from (e.g., "pkg/utils")
 //   - basePkgUrl: The base package URL/module path (e.g., "github.com/user/project")
 //   - callback: Function called for each package, receives *PackageInfo and full package URL
-func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageInfo, string)) error {
+//   - progressCallback: Optional function called with progress updates, can be nil
+func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageInfo, string), progressCallback func(ProgressInfo)) error {
 	// Use a worker pool with goroutines limited to the number of processors
 	numWorkers := runtime.NumCPU()
 	
@@ -238,9 +247,33 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 	// Send initial work item
 	workChan <- scanWork{pkgPath: pkgPath, basePkgUrl: basePkgUrl}
 	
-	// Keep track of pending work to know when to close workChan
+	// Keep track of pending work and completed work for progress tracking
 	pendingWork := 1
+	completedWork := 0
+	totalDiscovered := 1
 	var mu sync.Mutex
+	
+	// Helper function to report progress
+	reportProgress := func(currentPkg string) {
+		if progressCallback != nil {
+			mu.Lock()
+			completed := completedWork
+			total := totalDiscovered
+			mu.Unlock()
+			
+			percentage := 0.0
+			if total > 0 {
+				percentage = float64(completed) / float64(total) * 100.0
+			}
+			
+			progressCallback(ProgressInfo{
+				Completed:  completed,
+				Total:      total,
+				Current:    currentPkg,
+				Percentage: percentage,
+			})
+		}
+	}
 	
 	// Process results and generate more work
 	for result := range resultChan {
@@ -257,6 +290,9 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 			fullPkgUrl = fmt.Sprintf("%s/%s", result.work.basePkgUrl, result.work.pkgPath)
 		}
 		
+		// Report progress before processing
+		reportProgress(fullPkgUrl)
+		
 		// Invoke callback for current package
 		callback(result.packageInfo, fullPkgUrl)
 		
@@ -267,14 +303,31 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 		for _, subPkg := range subPackages {
 			workChan <- scanWork{pkgPath: subPkg, basePkgUrl: result.work.basePkgUrl}
 			pendingWork++
+			totalDiscovered++
 		}
 		pendingWork--
+		completedWork++
 		
 		// Close work channel when no more work is pending
 		if pendingWork == 0 {
 			close(workChan)
 		}
 		mu.Unlock()
+	}
+	
+	// Report final progress (100% completion)
+	if progressCallback != nil {
+		mu.Lock()
+		completed := completedWork
+		total := totalDiscovered
+		mu.Unlock()
+		
+		progressCallback(ProgressInfo{
+			Completed:  completed,
+			Total:      total,
+			Current:    "Completed",
+			Percentage: 100.0,
+		})
 	}
 	
 	return nil
@@ -393,3 +446,9 @@ func hasGoFiles(dirPath string) bool {
 
 // ScanPackage is an alias for ScanSinglePackage for backward compatibility
 var ScanPackage = ScanSinglePackage
+
+// ScanPackagesRecursivelyWithoutProgress is a backward-compatible wrapper that calls
+// ScanPackagesRecursively without progress tracking
+func ScanPackagesRecursivelyWithoutProgress(pkgPath, basePkgUrl string, callback func(*PackageInfo, string)) error {
+	return ScanPackagesRecursively(pkgPath, basePkgUrl, callback, nil)
+}

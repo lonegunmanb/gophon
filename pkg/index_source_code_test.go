@@ -17,7 +17,7 @@ func TestIndexSourceCode(t *testing.T) {
 	defer stub.Reset()
 
 	// Test the index file generator against real pkg/testharness
-	require.NoError(t, IndexSourceCode("testharness", "github.com/lonegunmanb/gophon/pkg", "output"))
+	require.NoError(t, IndexSourceCode("testharness", "github.com/lonegunmanb/gophon/pkg", "output", nil))
 
 	// Verify that index files were created in the destination filesystem
 	// Check for some expected files based on what's actually in pkg/testharness
@@ -74,7 +74,7 @@ func TestIndexSourceCode_EmptyPackage(t *testing.T) {
 	})
 
 	// Test with empty package
-	err := IndexSourceCode("empty", "github.com/example/test", "output")
+	err := IndexSourceCode("empty", "github.com/example/test", "output", nil)
 	require.NoError(t, err)
 
 	// Verify output directory does not exists

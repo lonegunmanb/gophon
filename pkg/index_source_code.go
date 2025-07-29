@@ -15,12 +15,11 @@ var destFs = afero.NewOsFs()
 // for each symbol (constants, variables, types, functions, methods) in the destination filesystem.
 //
 // Parameters:
-//   - sourceFs: The source filesystem to scan (typically afero.NewOsFs() for real filesystem)
 //   - pkgPath: The relative package path to start scanning from (e.g., "testharness")
 //   - basePkgUrl: The base package URL/module path (e.g., "github.com/lonegunmanb/gophon/pkg")
-//   - destFs: The destination filesystem where index files will be written
 //   - destFolder: The destination folder path where index files will be organized
-func IndexSourceCode(pkgPath, basePkgUrl string, destFolder string) error {
+//   - progressCallback: Optional function called with progress updates, can be nil
+func IndexSourceCode(pkgPath, basePkgUrl string, destFolder string, progressCallback func(ProgressInfo)) error {
 	// Define the callback function that will be called for each package
 	callback := func(pkgInfo *PackageInfo, pkgUrl string) {
 		// Extract the relative package path from the full package URL
@@ -37,8 +36,14 @@ func IndexSourceCode(pkgPath, basePkgUrl string, destFolder string) error {
 		saveIndexes(pkgDestDir, pkgInfo.Functions)
 	}
 
-	// Call ScanPackagesRecursively with our callback
-	return ScanPackagesRecursively(pkgPath, basePkgUrl, callback)
+	// Call ScanPackagesRecursively with our callback and progress tracking
+	return ScanPackagesRecursively(pkgPath, basePkgUrl, callback, progressCallback)
+}
+
+// IndexSourceCodeWithoutProgress is a backward-compatible wrapper that calls
+// IndexSourceCode without progress tracking
+func IndexSourceCodeWithoutProgress(pkgPath, basePkgUrl string, destFolder string) error {
+	return IndexSourceCode(pkgPath, basePkgUrl, destFolder, nil)
 }
 
 // saveConstants creates index files for all constants in the package

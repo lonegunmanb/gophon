@@ -10,6 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestScanPackage_longPackagePath(t *testing.T) {
+	pkgPath := filepath.Join("testharness", "dir_without_go_file", "dir_without_go_file", "dir")
+	pkg, err := ScanSinglePackage(pkgPath, "github.com/lonegunmanb/gophon/pkg")
+	require.NoError(t, err)
+	assert.Equal(t, pkg.Variables[0].Package, "github.com/lonegunmanb/gophon/pkg/testharness/dir_without_go_file/dir_without_go_file/dir")
+}
+
 func TestScanPackage_ContainsSubjectsFile(t *testing.T) {
 	// Act
 	packageResult := scanHarnessPackage(t)

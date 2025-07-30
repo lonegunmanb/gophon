@@ -52,7 +52,11 @@ func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 	// Split the directory path and replace the last part with the actual package name
 	pathParts := []string{basePkgUrl}
 	if pkgPath != "" {
-		parts := strings.Split(pkgPath, "/")
+		sep := string(filepath.Separator)
+		parts := strings.Split(pkgPath, sep)
+		if !strings.Contains(pkgPath, sep) && strings.Contains(pkgPath, "/") {
+			parts = strings.Split(pkgPath, "/")
+		}
 		if len(parts) > 1 {
 			pathParts = append(pathParts, parts[:len(parts)-1]...)
 		}

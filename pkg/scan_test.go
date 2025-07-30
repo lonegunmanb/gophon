@@ -21,6 +21,7 @@ func TestScanPackage_ContainsSubjectsFile(t *testing.T) {
 			found = true
 			break
 		}
+		assert.NotNil(t, file.File)
 	}
 	assert.True(t, found, "Expected to find subjects.go with absolute path in the scanned package files")
 }

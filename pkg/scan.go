@@ -32,7 +32,7 @@ func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 	} else {
 		loadPath = "./" + pkgPath
 	}
-	
+
 	cfg := &packages.Config{
 		Mode: packages.NeedFiles | packages.NeedName | packages.NeedImports | packages.NeedTypes | packages.NeedSyntax,
 	}
@@ -68,14 +68,6 @@ func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 	var types []*TypeInfo
 	var functions []*FunctionInfo
 
-	// Extract file information
-	for _, file := range pkg.GoFiles {
-		files = append(files, &FileInfo{
-			FileName: file,
-			Package:  actualPkgPath,
-		})
-	}
-
 	// Extract constants, variables, and types from AST
 	for _, file := range pkg.Syntax {
 		if file == nil {
@@ -84,9 +76,11 @@ func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 
 		fileName := pkg.Fset.Position(file.Pos()).Filename
 		fileInfo := &FileInfo{
+			File:     file,
 			FileName: fileName,
 			Package:  actualPkgPath,
 		}
+		files = append(files, fileInfo)
 
 		// Walk through declarations to find constants, variables, types, and functions
 		for _, decl := range file.Decls {
@@ -259,10 +253,10 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 
 	// Create a channel for work distribution
 	workChan := make(chan string, len(allPackages))
-	
+
 	// Create error channel to collect errors from workers
 	errChan := make(chan error, len(allPackages))
-	
+
 	// Determine number of workers (limited by CPU count)
 	numWorkers := runtime.NumCPU()
 	if numWorkers > len(allPackages) {
@@ -274,7 +268,7 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			
+
 			for currentPkgPath := range workChan {
 				// Report progress before processing
 				reportProgress(currentPkgPath)

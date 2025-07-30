@@ -11,6 +11,7 @@ import (
 
 // FileInfo contains information about a single Go file
 type FileInfo struct {
+	*ast.File
 	FileName string
 	FilePath string
 	Package  string

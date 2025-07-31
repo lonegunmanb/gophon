@@ -24,6 +24,7 @@ func TestScanPackage_ExtractsVariables(t *testing.T) {
 	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", globalCounterVar.PackagePath())
 	assert.Contains(t, globalCounterVar.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(globalCounterVar.FileName), "FileName should be absolute path")
+	assert.NotNil(t, globalCounterVar.GenDecl)
 
 	// Assert String() method returns the exact source code from subjects.go
 	assert.Equal(t, "\tGlobalCounter int64", globalCounterVar.String(), "GlobalCounter String() should return exact source code line")
@@ -34,6 +35,7 @@ func TestScanPackage_ExtractsVariables(t *testing.T) {
 	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", isDebugModeVar.PackagePath())
 	assert.Contains(t, isDebugModeVar.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(isDebugModeVar.FileName), "FileName should be absolute path")
+	assert.NotNil(t, isDebugModeVar.GenDecl)
 
 	// Assert String() method returns the exact source code from subjects.go
 	assert.Equal(t, "\tisDebugMode bool = false", isDebugModeVar.String(), "IsDebugMode String() should return exact source code line")

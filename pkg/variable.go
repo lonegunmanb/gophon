@@ -1,10 +1,14 @@
 package pkg
 
-import "fmt"
+import (
+	"fmt"
+	"go/ast"
+)
 
 // VariableInfo contains information about variable declarations
 type VariableInfo struct {
 	*Range
+	*ast.GenDecl
 	Name string
 }
 

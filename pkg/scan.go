@@ -93,15 +93,17 @@ func ScanSinglePackage(pkgPath, basePkgUrl string) (*PackageInfo, error) {
 				case token.CONST:
 					constants = append(constants, extractDeclarations(actualPkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) *ConstantInfo {
 						return &ConstantInfo{
-							Name:  name,
-							Range: rangeInfo,
+							GenDecl: genDecl,
+							Name:    name,
+							Range:   rangeInfo,
 						}
 					})...)
 				case token.VAR:
 					variables = append(variables, extractDeclarations(actualPkgPath, genDecl, pkg, fileInfo, func(name string, pkgPath string, rangeInfo *Range) *VariableInfo {
 						return &VariableInfo{
-							Name:  name,
-							Range: rangeInfo,
+							GenDecl: genDecl,
+							Name:    name,
+							Range:   rangeInfo,
 						}
 					})...)
 				case token.TYPE:
@@ -167,8 +169,9 @@ func extractTypeDeclarations(genDecl *ast.GenDecl, pkg *packages.Package, fileIn
 			}
 
 			results = append(results, &TypeInfo{
-				Name:  typeSpec.Name.Name,
-				Range: rangeInfo,
+				Name:    typeSpec.Name.Name,
+				Range:   rangeInfo,
+				GenDecl: genDecl,
 			})
 		}
 	}
@@ -206,6 +209,7 @@ func extractFunctionDeclarations(funcDecl *ast.FuncDecl, pkg *packages.Package, 
 
 	results = append(results, &FunctionInfo{
 		Range:        rangeInfo,
+		FuncDecl:     funcDecl,
 		Name:         funcDecl.Name.Name,
 		ReceiverType: receiverType,
 	})

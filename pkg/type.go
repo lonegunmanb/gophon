@@ -1,10 +1,14 @@
 package pkg
 
-import "fmt"
+import (
+	"fmt"
+	"go/ast"
+)
 
 // TypeInfo contains information about type declarations
 type TypeInfo struct {
 	*Range
+	*ast.GenDecl
 	Name string
 }
 

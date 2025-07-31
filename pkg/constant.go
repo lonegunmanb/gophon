@@ -1,10 +1,14 @@
 package pkg
 
-import "fmt"
+import (
+	"fmt"
+	"go/ast"
+)
 
 // ConstantInfo contains information about constant declarations
 type ConstantInfo struct {
 	*Range
+	*ast.GenDecl
 	Name string
 }
 

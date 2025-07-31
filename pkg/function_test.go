@@ -30,6 +30,7 @@ func TestScanPackage_ExtractsFunctions(t *testing.T) {
 	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", newServiceFunc.PackagePath())
 	assert.Contains(t, newServiceFunc.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(newServiceFunc.FileName), "FileName should be absolute path")
+	assert.NotNil(t, newServiceFunc.FuncDecl)
 
 	// Assert String() method returns the exact source code from subjects.go
 	expectedNewServiceSource := `func NewService(userService UserService) *Service {
@@ -46,6 +47,7 @@ func TestScanPackage_ExtractsFunctions(t *testing.T) {
 	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", validateEmailFunc.PackagePath())
 	assert.Contains(t, validateEmailFunc.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(validateEmailFunc.FileName), "FileName should be absolute path")
+	assert.NotNil(t, validateEmailFunc.FuncDecl)
 
 	// Assert String() method returns the exact source code from subjects.go
 	expectedValidateEmailSource := `func ValidateEmail(email string) bool {
@@ -60,6 +62,7 @@ func TestScanPackage_ExtractsFunctions(t *testing.T) {
 	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", containsFunc.PackagePath())
 	assert.Contains(t, containsFunc.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(containsFunc.FileName), "FileName should be absolute path")
+	assert.NotNil(t, containsFunc.FuncDecl)
 
 	// Assert String() method returns the exact source code from subjects.go
 	expectedContainsSource := `func contains(s, substr string) bool {
@@ -79,6 +82,7 @@ func TestScanPackage_ExtractsFunctions(t *testing.T) {
 	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", createUserMethod.PackagePath())
 	assert.Contains(t, createUserMethod.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(createUserMethod.FileName), "FileName should be absolute path")
+	assert.NotNil(t, createUserMethod.FuncDecl)
 
 	// Assert String() method returns the exact source code from subjects.go
 	expectedCreateUserSource := `func (s *Service) CreateUser(ctx context.Context, name, email string) (*User, error) {
@@ -102,6 +106,7 @@ func TestScanPackage_ExtractsFunctions(t *testing.T) {
 	assert.Equal(t, "github.com/lonegunmanb/gophon/pkg/testharness", getUserMethod.PackagePath())
 	assert.Contains(t, getUserMethod.FileName, "subjects.go")
 	assert.True(t, filepath.IsAbs(getUserMethod.FileName), "FileName should be absolute path")
+	assert.NotNil(t, getUserMethod.FuncDecl)
 
 	// Assert String() method returns the exact source code from subjects.go
 	expectedGetUserSource := `func (s *Service) GetUser(ctx context.Context, id int64) (*User, error) {

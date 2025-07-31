@@ -93,6 +93,7 @@ func TestScanPackage_TypePackagePath(t *testing.T) {
 	expectedPackagePath := "github.com/lonegunmanb/gophon/pkg/testharness"
 	for _, typeInfo := range packageResult.Types {
 		assert.Equal(t, expectedPackagePath, typeInfo.PackagePath(), "Type %s should have correct package path", typeInfo.Name)
+		assert.NotNil(t, typeInfo.GenDecl)
 	}
 }
 

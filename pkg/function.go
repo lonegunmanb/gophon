@@ -2,12 +2,14 @@ package pkg
 
 import (
 	"fmt"
+	"go/ast"
 	"strings"
 )
 
 // FunctionInfo contains detailed information about functions and methods
 type FunctionInfo struct {
 	*Range
+	*ast.FuncDecl
 	Name         string
 	ReceiverType string
 }

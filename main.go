@@ -24,11 +24,17 @@ func main() {
 		_, _ = fmt.Fprintf(os.Stderr, "Usage: %s [options]\n\n", os.Args[0])
 		_, _ = fmt.Fprintf(os.Stderr, "Options:\n")
 		flag.PrintDefaults()
+		_, _ = fmt.Fprintf(os.Stderr, "\nEnvironment Variables:\n")
+		_, _ = fmt.Fprintf(os.Stderr, "  GOPHON_CPU_LIMIT    Limit CPU usage percentage (1-100, default: 100)\n")
+		_, _ = fmt.Fprintf(os.Stderr, "                      Lower values reduce CPU usage but increase processing time\n")
+		_, _ = fmt.Fprintf(os.Stderr, "                      Useful for CI/CD environments to avoid timeouts\n")
 		_, _ = fmt.Fprintf(os.Stderr, "\nExamples:\n")
 		_, _ = fmt.Fprintf(os.Stderr, "  # Index the entire project\n")
 		_, _ = fmt.Fprintf(os.Stderr, "  %s -base=github.com/lonegunmanb/gophon/pkg -dest=./output\n\n", os.Args[0])
 		_, _ = fmt.Fprintf(os.Stderr, "  # Index a specific package\n")
 		_, _ = fmt.Fprintf(os.Stderr, "  %s -pkg=testharness -base=github.com/lonegunmanb/gophon/pkg -dest=./output\n\n", os.Args[0])
+		_, _ = fmt.Fprintf(os.Stderr, "  # Index with CPU throttling (50%% CPU usage)\n")
+		_, _ = fmt.Fprintf(os.Stderr, "  GOPHON_CPU_LIMIT=50 %s -base=github.com/lonegunmanb/gophon/pkg -dest=./output\n\n", os.Args[0])
 	}
 
 	flag.Parse()
@@ -55,6 +61,14 @@ func main() {
 	fmt.Printf("Package path: %s\n", *pkgPath)
 	fmt.Printf("Base URL: %s\n", *basePkgUrl)
 	fmt.Printf("Destination: %s\n", absDestDir)
+	
+	// Show CPU throttling status
+	if cpuLimit := os.Getenv("GOPHON_CPU_LIMIT"); cpuLimit != "" {
+		fmt.Printf("CPU Limit: %s%%\n", cpuLimit)
+	} else {
+		fmt.Printf("CPU Limit: 100%% (no throttling)\n")
+	}
+	
 	fmt.Printf("\nGenerating index files...\n")
 
 	// Track start time for elapsed time and ETA calculations

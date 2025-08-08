@@ -5,15 +5,64 @@ import (
 	"github.com/spf13/afero"
 	"go/ast"
 	"go/token"
+	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"golang.org/x/tools/go/packages"
 )
 
 var sourceFs = afero.NewOsFs()
+
+// CPUThrottleConfig holds configuration for CPU usage throttling
+type CPUThrottleConfig struct {
+	CPULimitPercent int           // Percentage of CPU to use (1-100)
+	WorkerDelay     time.Duration // Delay between operations per worker
+	MaxWorkers      int           // Maximum number of concurrent workers
+}
+
+// getCPUThrottleConfig reads CPU throttling configuration from environment variables
+func getCPUThrottleConfig() CPUThrottleConfig {
+	config := CPUThrottleConfig{
+		CPULimitPercent: 100, // Default to 100% CPU usage (no throttling)
+		WorkerDelay:     0,   // No delay by default
+		MaxWorkers:      runtime.NumCPU(), // Default to all available CPUs
+	}
+
+	// Read GOPHON_CPU_LIMIT environment variable
+	if cpuLimitStr := os.Getenv("GOPHON_CPU_LIMIT"); cpuLimitStr != "" {
+		if cpuLimit, err := strconv.Atoi(cpuLimitStr); err == nil {
+			if cpuLimit >= 1 && cpuLimit <= 100 {
+				config.CPULimitPercent = cpuLimit
+				
+				// Calculate throttling parameters based on CPU limit
+				if cpuLimit < 100 {
+					// Reduce number of workers proportionally
+					config.MaxWorkers = max(1, (runtime.NumCPU()*cpuLimit)/100)
+					
+					// Add delay between operations to reduce CPU pressure
+					// Lower CPU limit = longer delays
+					delayMs := (100 - cpuLimit) * 2 // 2ms per percent under 100%
+					config.WorkerDelay = time.Duration(delayMs) * time.Millisecond
+				}
+			}
+		}
+	}
+
+	return config
+}
+
+// max returns the larger of two integers
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
 
 // ProgressInfo represents progress information during package scanning
 type ProgressInfo struct {
@@ -220,6 +269,7 @@ func extractFunctionDeclarations(funcDecl *ast.FuncDecl, pkg *packages.Package, 
 // ScanPackagesRecursively recursively scans all packages starting from the specified path
 // and invokes the callback function for each package found. It uses afero.Fs for file system operations
 // to enable easy testing with mocked file systems.
+// CPU usage can be throttled using the GOPHON_CPU_LIMIT environment variable (1-100 percent).
 // Parameters:
 //   - fs: The afero filesystem to use for file operations
 //   - pkgPath: The relative package path to start scanning from (e.g., "pkg/utils")
@@ -227,6 +277,9 @@ func extractFunctionDeclarations(funcDecl *ast.FuncDecl, pkg *packages.Package, 
 //   - callback: Function called for each package, receives *PackageInfo and full package URL
 //   - progressCallback: Optional callback for progress updates, receives ProgressInfo
 func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageInfo, string), progressCallback func(ProgressInfo)) error {
+	// Get CPU throttling configuration
+	throttleConfig := getCPUThrottleConfig()
+	
 	// First, discover all packages to get accurate total count
 	allPackages := findSubPackages(pkgPath)
 	if pkgPath != "" || len(allPackages) == 0 {
@@ -265,10 +318,16 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 	// Create error channel to collect errors from workers
 	errChan := make(chan error, len(allPackages))
 
-	// Determine number of workers (limited by CPU count)
-	numWorkers := runtime.NumCPU()
+	// Use throttled worker count instead of all CPUs
+	numWorkers := throttleConfig.MaxWorkers
 	if numWorkers > len(allPackages) {
 		numWorkers = len(allPackages)
+	}
+
+	// Log CPU throttling information if throttling is enabled
+	if throttleConfig.CPULimitPercent < 100 {
+		fmt.Printf("🔧 CPU throttling enabled: %d%% limit, %d workers (vs %d CPUs), %v delay\n", 
+			throttleConfig.CPULimitPercent, numWorkers, runtime.NumCPU(), throttleConfig.WorkerDelay)
 	}
 
 	// Start worker goroutines
@@ -278,6 +337,11 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 			defer wg.Done()
 
 			for currentPkgPath := range workChan {
+				// Apply CPU throttling delay if configured
+				if throttleConfig.WorkerDelay > 0 {
+					time.Sleep(throttleConfig.WorkerDelay)
+				}
+
 				// Report progress before processing
 				reportProgress(currentPkgPath)
 
@@ -301,6 +365,11 @@ func ScanPackagesRecursively(pkgPath, basePkgUrl string, callback func(*PackageI
 				callback(packageInfo, fullPkgUrl)
 				completedWork++
 				mu.Unlock()
+
+				// Apply additional delay after processing if CPU throttling is aggressive
+				if throttleConfig.CPULimitPercent < 50 {
+					time.Sleep(throttleConfig.WorkerDelay / 2)
+				}
 			}
 		}()
 	}

@@ -206,6 +206,42 @@ Options:
         Show help message
 ```
 
+### Environment Variables
+
+#### GOPHON_CPU_LIMIT
+
+Control CPU usage to prevent timeouts in CI/CD environments:
+
+```bash
+# Limit to 50% CPU usage (recommended for GitHub Actions)
+export GOPHON_CPU_LIMIT=50
+gophon -base=github.com/yourname/yourproject -dest=./indexes
+
+# Limit to 25% CPU usage (for very resource-constrained environments)
+export GOPHON_CPU_LIMIT=25  
+gophon -base=github.com/yourname/yourproject -dest=./indexes
+```
+
+**How it works:**
+- **Worker Reduction**: Reduces concurrent workers proportionally (e.g., 50% → half the CPU cores)
+- **Processing Delays**: Adds delays between operations to reduce CPU pressure
+- **Adaptive Throttling**: Lower limits add longer delays to prevent resource exhaustion
+
+**Recommended values:**
+- `100` (default): Full speed, no throttling
+- `75`: Light throttling for shared environments
+- `50`: Medium throttling for CI/CD (recommended for GitHub Actions)
+- `25`: Heavy throttling for resource-constrained environments
+
+**CI/CD Usage Example:**
+```yaml
+# GitHub Actions workflow
+- name: Generate code indexes
+  run: |
+    export GOPHON_CPU_LIMIT=50
+    gophon -base=github.com/${{ github.repository }} -dest=./indexes
+```
+
 ## Testing
 
 Run the comprehensive test suite:

@@ -12,9 +12,9 @@ func TestGetCPUThrottleConfig(t *testing.T) {
 	originalCPULimit := os.Getenv("GOPHON_CPU_LIMIT")
 	defer func() {
 		if originalCPULimit == "" {
-			os.Unsetenv("GOPHON_CPU_LIMIT")
+			_ = os.Unsetenv("GOPHON_CPU_LIMIT")
 		} else {
-			os.Setenv("GOPHON_CPU_LIMIT", originalCPULimit)
+			_ = os.Setenv("GOPHON_CPU_LIMIT", originalCPULimit)
 		}
 	}()
 
@@ -80,9 +80,9 @@ func TestGetCPUThrottleConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set environment variable
 			if tt.envValue == "" {
-				os.Unsetenv("GOPHON_CPU_LIMIT")
+				_ = os.Unsetenv("GOPHON_CPU_LIMIT")
 			} else {
-				os.Setenv("GOPHON_CPU_LIMIT", tt.envValue)
+				_ = os.Setenv("GOPHON_CPU_LIMIT", tt.envValue)
 			}
 
 			// Get configuration
